@@ -20,6 +20,7 @@
 		<apache.poi.version>4.1.2</apache.poi.version>
 		<telegram.version>5.0.1</telegram.version>
 		<spring.boot.mainclass>en1.telegram.fit_to_gpx_bot.FitToGpxBotApplicationKt</spring.boot.mainclass>
+		<kotlin.compiler.incremental>true</kotlin.compiler.incremental>
 	</properties>
 
 	<dependencies>
@@ -113,7 +114,8 @@
 					</execution>
 				</executions>
 			</plugin>
-			<!--<plugin>
+
+		<!--	<plugin>
 				<groupId>org.jetbrains.kotlin</groupId>
 				<artifactId>kotlin-maven-plugin</artifactId>
 				<configuration>
@@ -132,7 +134,8 @@
 					</dependency>
 				</dependencies>
 			</plugin>-->
-			<plugin>
+
+			<!--<plugin>
 				<groupId>org.jetbrains.kotlin</groupId>
 				<artifactId>kotlin-maven-plugin</artifactId>
 				<version>${kotlin.version}</version>
@@ -150,13 +153,13 @@
 							</sourceDirs>
 						</configuration>
 					</execution>
-					<!--<execution>
+					<execution>
 						<id>test-compile</id>
 						<phase>test-compile</phase>
 						<goals>
 							<goal>test-compile</goal>
 						</goals>
-					</execution>-->
+					</execution>
 				</executions>
 				<configuration>
 					<args>
@@ -173,12 +176,72 @@
 						<version>${kotlin.version}</version>
 					</dependency>
 				</dependencies>
-			</plugin>
+			</plugin>-->
 
-			<!-- https://stackoverflow.com/questions/43980110/using-kotlin-class-in-java-cannot-find-symbol -->
+			<!--&lt;!&ndash; https://stackoverflow.com/questions/43980110/using-kotlin-class-in-java-cannot-find-symbol &ndash;&gt;
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
+				<executions>
+					&lt;!&ndash; Replacing default-compile as it is treated specially by maven &ndash;&gt;
+					<execution>
+						<id>default-compile</id>
+						<phase>none</phase>
+					</execution>
+					&lt;!&ndash; Replacing default-testCompile as it is treated specially by maven &ndash;&gt;
+					<execution>
+						<id>default-testCompile</id>
+						<phase>none</phase>
+					</execution>
+					<execution>
+						<id>java-compile</id>
+						<phase>compile</phase>
+						<goals> <goal>compile</goal> </goals>
+					</execution>
+					<execution>
+						<id>java-test-compile</id>
+						<phase>test-compile</phase>
+						<goals> <goal>testCompile</goal> </goals>
+					</execution>
+				</executions>
+				<configuration>
+					<source>11</source>
+					<target>11</target>
+				</configuration>
+			</plugin>-->
+
+
+			<plugin>
+				<artifactId>kotlin-maven-plugin</artifactId>
+				<groupId>org.jetbrains.kotlin</groupId>
+				<version>${kotlin.version}</version>
+				<executions>
+					<execution>
+						<id>compile</id>
+						<goals> <goal>compile</goal> </goals>
+						<configuration>
+							<sourceDirs>
+								<sourceDir>${project.basedir}/src/main/kotlin</sourceDir>
+								<sourceDir>${project.basedir}/src/main/java</sourceDir>
+							</sourceDirs>
+						</configuration>
+					</execution>
+					<execution>
+						<id>test-compile</id>
+						<goals> <goal>test-compile</goal> </goals>
+						<configuration>
+							<sourceDirs>
+								<sourceDir>${project.basedir}/src/test/kotlin</sourceDir>
+								<sourceDir>${project.basedir}/src/test/java</sourceDir>
+							</sourceDirs>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>3.5.1</version>
 				<executions>
 					<!-- Replacing default-compile as it is treated specially by maven -->
 					<execution>
@@ -186,25 +249,21 @@
 						<phase>none</phase>
 					</execution>
 					<!-- Replacing default-testCompile as it is treated specially by maven -->
-					<!--<execution>
+					<execution>
 						<id>default-testCompile</id>
 						<phase>none</phase>
-					</execution>-->
+					</execution>
 					<execution>
 						<id>java-compile</id>
 						<phase>compile</phase>
 						<goals> <goal>compile</goal> </goals>
 					</execution>
-					<!--<execution>
+					<execution>
 						<id>java-test-compile</id>
 						<phase>test-compile</phase>
 						<goals> <goal>testCompile</goal> </goals>
-					</execution>-->
+					</execution>
 				</executions>
-				<configuration>
-					<source>11</source>
-					<target>11</target>
-				</configuration>
 			</plugin>
 
 		</plugins>

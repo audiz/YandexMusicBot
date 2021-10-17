@@ -1,3 +1,4 @@
+/*
 package en1.telegram.fit_to_gpx_bot
 
 import org.junit.jupiter.api.Test
@@ -11,3 +12,4 @@ class FitToGpxBotApplicationTests {
 	}
 
 }
+*/

@@ -1,9 +1,9 @@
 package en1.telegram.fit_to_gpx_bot.telegram
 
 import en1.telegram.fit_to_gpx_bot.telegram.commands.service.HelpCommand
-import en1.telegram.fit_to_gpx_bot.telegram.nonCommand.NonCommand
 import en1.telegram.fit_to_gpx_bot.utils.MyConverterTest
 import en1.telegram.fit_to_gpx_bot.utils.Utils
+import en1.telegram.fit_to_gpx_bot.telegram.nonCommand.NonCommand
 import org.slf4j.LoggerFactory
 import org.telegram.telegrambots.extensions.bots.commandbot.TelegramLongPollingCommandBot
 import org.telegram.telegrambots.meta.api.methods.GetFile
