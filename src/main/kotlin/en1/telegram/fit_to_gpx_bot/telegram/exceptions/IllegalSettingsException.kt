@@ -1,4 +1,4 @@
-package en1.telegram.FitToGpxBot.telegram.exceptions
+package en1.telegram.fit_to_gpx_bot.telegram.exceptions
 
 import java.lang.IllegalArgumentException
 

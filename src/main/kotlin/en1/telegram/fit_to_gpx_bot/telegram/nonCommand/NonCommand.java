@@ -1,4 +1,4 @@
-package en1.telegram.FitToGpxBot.telegram.nonCommand;
+package en1.telegram.fit_to_gpx_bot.telegram.nonCommand;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

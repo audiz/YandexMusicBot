@@ -1,6 +1,6 @@
-package en1.telegram.FitToGpxBot
+package en1.telegram.fit_to_gpx_bot
 
-import en1.telegram.FitToGpxBot.telegram.Bot
+import en1.telegram.fit_to_gpx_bot.telegram.Bot
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
 import org.telegram.telegrambots.meta.TelegramBotsApi

@@ -1,6 +1,6 @@
-package en1.telegram.FitToGpxBot.telegram.commands.service
+package en1.telegram.fit_to_gpx_bot.telegram.commands.service
 
-import en1.telegram.FitToGpxBot.utils.Utils
+import en1.telegram.fit_to_gpx_bot.utils.Utils
 import org.slf4j.LoggerFactory
 import org.telegram.telegrambots.meta.api.objects.Chat
 import org.telegram.telegrambots.meta.api.objects.User

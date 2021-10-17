@@ -1,4 +1,4 @@
-package en1.telegram.FitToGpxBot.utils
+package en1.telegram.fit_to_gpx_bot.utils
 
 import org.telegram.telegrambots.meta.api.objects.Message
 import org.telegram.telegrambots.meta.api.objects.User

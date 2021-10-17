@@ -1,9 +1,8 @@
-package en1.telegram.FitToGpxBot.utils
+package en1.telegram.fit_to_gpx_bot.utils
 
 import kotlin.Throws
 import kotlin.jvm.JvmStatic
 import java.lang.RuntimeException
-import en1.telegram.FitToGpxBot.utils.MyConverterTest
 import org.apache.commons.io.FileUtils
 import com.garmin.fit.Decode
 import com.garmin.fit.MesgBroadcaster
@@ -12,7 +11,6 @@ import java.text.SimpleDateFormat
 import com.garmin.fit.FitRuntimeException
 import com.garmin.fit.RecordMesgListener
 import com.garmin.fit.RecordMesg
-import en1.telegram.FitToGpxBot.telegram.commands.service.HelpCommand
 import org.slf4j.LoggerFactory
 import java.io.*
 import java.lang.Exception
@@ -33,6 +31,7 @@ object MyConverterTest {
     private const val out_gpx_head2 = " <trk>\n  <name>{FTIFile}</name>\n  <number>{serialnumber}</number>\n  <trkseg>"
     private const val out_gpx_tail1 = "  </trkseg>\n </trk>"
     private const val out_gpx_tail2 = "</gpx>"
+
     @Throws(Exception::class)
     @JvmStatic
     fun main(args: Array<String>) {
