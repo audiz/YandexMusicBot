@@ -20,7 +20,6 @@
 		<apache.poi.version>4.1.2</apache.poi.version>
 		<telegram.version>5.0.1</telegram.version>
 		<spring.boot.mainclass>en1.telegram.fit_to_gpx_bot.FitToGpxBotApplicationKt</spring.boot.mainclass>
-		<kotlin.compiler.incremental>true</kotlin.compiler.incremental>
 	</properties>
 
 	<dependencies>
@@ -97,8 +96,8 @@
 	</dependencies>
 
 	<build>
-		<sourceDirectory>${project.basedir}/src/main/kotlin</sourceDirectory>
-		<testSourceDirectory>${project.basedir}/src/test/kotlin</testSourceDirectory>
+		<sourceDirectory>${project.basedir}/src/main/java</sourceDirectory>
+		<testSourceDirectory>${project.basedir}/src/test/java</testSourceDirectory>
 		<plugins>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
@@ -135,7 +134,8 @@
 				</dependencies>
 			</plugin>-->
 
-			<!--<plugin>
+
+			<plugin>
 				<groupId>org.jetbrains.kotlin</groupId>
 				<artifactId>kotlin-maven-plugin</artifactId>
 				<version>${kotlin.version}</version>
@@ -146,12 +146,6 @@
 						<goals>
 							<goal>compile</goal>
 						</goals>
-						<configuration>
-							<sourceDirs>
-								<sourceDir>${project.basedir}/src/main/kotlin</sourceDir>
-								<sourceDir>${project.basedir}/src/main/java</sourceDir>
-							</sourceDirs>
-						</configuration>
 					</execution>
 					<execution>
 						<id>test-compile</id>
@@ -176,19 +170,19 @@
 						<version>${kotlin.version}</version>
 					</dependency>
 				</dependencies>
-			</plugin>-->
+			</plugin>
 
-			<!--&lt;!&ndash; https://stackoverflow.com/questions/43980110/using-kotlin-class-in-java-cannot-find-symbol &ndash;&gt;
+			<!-- https://stackoverflow.com/questions/43980110/using-kotlin-class-in-java-cannot-find-symbol -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
 				<executions>
-					&lt;!&ndash; Replacing default-compile as it is treated specially by maven &ndash;&gt;
+					<!-- Replacing default-compile as it is treated specially by maven -->
 					<execution>
 						<id>default-compile</id>
 						<phase>none</phase>
 					</execution>
-					&lt;!&ndash; Replacing default-testCompile as it is treated specially by maven &ndash;&gt;
+					<!-- Replacing default-testCompile as it is treated specially by maven -->
 					<execution>
 						<id>default-testCompile</id>
 						<phase>none</phase>
@@ -208,10 +202,9 @@
 					<source>11</source>
 					<target>11</target>
 				</configuration>
-			</plugin>-->
+			</plugin>
 
-
-			<plugin>
+			<!--<plugin>
 				<artifactId>kotlin-maven-plugin</artifactId>
 				<groupId>org.jetbrains.kotlin</groupId>
 				<version>${kotlin.version}</version>
@@ -243,12 +236,12 @@
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>3.5.1</version>
 				<executions>
-					<!-- Replacing default-compile as it is treated specially by maven -->
+					&lt;!&ndash; Replacing default-compile as it is treated specially by maven &ndash;&gt;
 					<execution>
 						<id>default-compile</id>
 						<phase>none</phase>
 					</execution>
-					<!-- Replacing default-testCompile as it is treated specially by maven -->
+					&lt;!&ndash; Replacing default-testCompile as it is treated specially by maven &ndash;&gt;
 					<execution>
 						<id>default-testCompile</id>
 						<phase>none</phase>
@@ -264,7 +257,7 @@
 						<goals> <goal>testCompile</goal> </goals>
 					</execution>
 				</executions>
-			</plugin>
+			</plugin>-->
 
 		</plugins>
 	</build>
