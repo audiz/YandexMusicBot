@@ -75,14 +75,14 @@ class FitToGpxConverterImpl : FitToGpxConverter {
                 val lat = mesg.positionLat.toFloat() / CONVERT_GEO_COORDS
                 val lon = mesg.positionLong.toFloat() / CONVERT_GEO_COORDS
                 activity.append("<trkpt lat=\"{lat}\"".replace("{lat}", java.lang.Float.toString(lat)))
-                        .append("lon=\"{lon}\">".replace("{lon}", java.lang.Float.toString(lon)))
+                        .append(" lon=\"{lon}\">".replace("{lon}", java.lang.Float.toString(lon)))
             } else {
                 activity.append("<trkpt lat=\"\"" + " lon=\"\">")
             }
             activity.append("<time>{time}</time>".replace("{time}", SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'").format(mesg.timestamp.date)))
-            if (mesg.enhancedAltitude != null) {
+            if (mesg.altitude != null) {
                 activity.append("<ele>{enhanced_altitude}</ele>".replace("{enhanced_altitude}",
-                        mesg.enhancedAltitude.toString()))
+                        mesg.altitude.toString()))
             }
 
             /*boolean extention = mesg.getPower() != null || mesg.getEnhancedSpeed() != null;
@@ -109,14 +109,7 @@ class FitToGpxConverterImpl : FitToGpxConverter {
     companion object {
         val log = LoggerFactory.getLogger(FitToGpxConverterImpl::class.java)
         val CONVERT_GEO_COORDS = 11930465
-        val out_gpx_head = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
-                "<gpx creator=\"Converted by fit2gpx, http://velo100.ru/garmin-fit-to-gpx from {creator}\" version=\"1.1\" " +
-                "xmlns=\"http://www.topografix.com/GPX/1/1\" " +
-                "xmlns:gpxtrx=\"http://www.garmin.com/xmlschemas/GpxExtensions/v3\" " +
-                "xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" " +
-                "xmlns:gpxtpx=\"http://www.garmin.com/xmlschemas/TrackPointExtension/v1\" " +
-                "xmlns:gpxx=\"http://www.garmin.com/xmlschemas/WaypointExtension/v1\" " +
-                "xmlns:nmea=\"http://trekbuddy.net/2009/01/gpx/nmea\">"
+        val out_gpx_head = "<gpx xmlns=\"http://www.topografix.com/GPX/1/1\" xmlns:gpxx=\"http://www.garmin.com/xmlschemas/GpxExtensions/v3\" xmlns:gpxtpx=\"http://www.garmin.com/xmlschemas/TrackPointExtension/v1\" creator=\"Oregon 400t\" version=\"1.1\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd http://www.garmin.com/xmlschemas/GpxExtensions/v3 http://www.garmin.com/xmlschemas/GpxExtensionsv3.xsd http://www.garmin.com/xmlschemas/TrackPointExtension/v1 http://www.garmin.com/xmlschemas/TrackPointExtensionv1.xsd\">"
         val out_gpx_head1 = " <metadata>\n  <time>{time}</time>\n </metadata>"
         val out_gpx_head2 = " <trk>\n  <name>{FTIFile}</name>\n  <number>{serialnumber}</number>\n  <trkseg>"
         val out_gpx_tail1 = "  </trkseg>\n </trk>"
