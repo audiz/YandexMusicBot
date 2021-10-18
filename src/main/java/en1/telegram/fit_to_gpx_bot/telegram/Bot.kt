@@ -1,10 +1,11 @@
 package en1.telegram.fit_to_gpx_bot.telegram
 
 import en1.telegram.fit_to_gpx_bot.telegram.commands.service.HelpCommand
-import en1.telegram.fit_to_gpx_bot.utils.MyConverterTest
 import en1.telegram.fit_to_gpx_bot.utils.Utils
 import en1.telegram.fit_to_gpx_bot.telegram.nonCommand.NonCommand
+import en1.telegram.fit_to_gpx_bot.telegram.service.FitToGpxConverter
 import org.slf4j.LoggerFactory
+import org.springframework.stereotype.Component
 import org.telegram.telegrambots.extensions.bots.commandbot.TelegramLongPollingCommandBot
 import org.telegram.telegrambots.meta.api.methods.GetFile
 import org.telegram.telegrambots.meta.api.methods.send.SendDocument
@@ -16,7 +17,8 @@ import org.telegram.telegrambots.meta.api.objects.Update
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException
 import java.io.InputStream
 
-class Bot(botName: String, botToken: String) : TelegramLongPollingCommandBot() {
+@Component
+class Bot(val fitToGpxConverter: FitToGpxConverter) : TelegramLongPollingCommandBot() {
     private val logger = LoggerFactory.getLogger(Bot::class.java)
     private val botUsername: String
 
@@ -35,30 +37,30 @@ class Bot(botName: String, botToken: String) : TelegramLongPollingCommandBot() {
      * Ответ на запрос, не являющийся командой
      */
     override fun processNonCommandUpdate(update: Update) {
-        val msg: Message = update.getMessage()
-            if (msg.hasDocument() && msg.getDocument().getFileName().lowercase().endsWith(".fit")) {
-            logger.info("msg.getDocument().getFileName() = {}", msg.getDocument().getFileName())
-            val doc_id: String = update.getMessage().getDocument().getFileId()
-            val doc_name: String = update.getMessage().getDocument().getFileName()
-            val chatId: Long = msg.getChatId()
+        val msg: Message = update.message
+            if (msg.hasDocument() && msg.document.fileName.lowercase().endsWith(".fit")) {
+            logger.info("msg.getDocument().getFileName() = {}", msg.document.fileName)
+            val doc_id: String = update.message.document.fileId
+            val doc_name: String = update.message.document.fileName
+            val chatId: Long = msg.chatId
             val getFile = GetFile()
-            getFile.setFileId(doc_id)
+                getFile.fileId = doc_id
             try {
                 val file: File = execute(getFile)
                 val `is`: InputStream = downloadFileAsStream(file)
-                val stream: InputStream = MyConverterTest.decode(`is`)
+                val stream: InputStream = fitToGpxConverter.decode(`is`)
                 val sendDocument = SendDocument()
-                sendDocument.setChatId(chatId.toString())
-                sendDocument.setDocument(InputFile(stream, String.format("%s.gpx", doc_name.substringBeforeLast("."))))
+                sendDocument.chatId = chatId.toString()
+                sendDocument.document = InputFile(stream, String.format("%s.gpx", doc_name.substringBeforeLast(".")))
                 execute(sendDocument)
             } catch (e: Exception) {
                 e.printStackTrace()
             }
         } else {
-            val chatId: Long = msg.getChatId()
+            val chatId: Long = msg.chatId
             val userName: String = Utils.getUserName(msg)
             //val answer: String = nonCommand.nonCommandExecute(chatId, userName, msg.getText())
-            setAnswer(chatId, userName, "Sorry! Unknown command")
+            setAnswer(chatId, userName, "Sorry! Unknown command, try /help command")
         }
     }
 
@@ -70,8 +72,8 @@ class Bot(botName: String, botToken: String) : TelegramLongPollingCommandBot() {
      */
     private fun setAnswer(chatId: Long, userName: String, text: String) {
         val answer = SendMessage()
-        answer.setText(text)
-        answer.setChatId(chatId.toString())
+        answer.text = text
+        answer.chatId = chatId.toString()
         try {
             execute(answer)
         } catch (e: TelegramApiException) {
@@ -85,9 +87,10 @@ class Bot(botName: String, botToken: String) : TelegramLongPollingCommandBot() {
     }
 
     init {
+        val getenv = System.getenv()
         logger.debug("Конструктор суперкласса отработал")
-        botUsername = botName
-        this.botToken = botToken
+        botUsername = getenv!!["BOT_NAME"]!!
+        this.botToken = getenv["BOT_TOKEN"]!!
         logger.debug("Имя и токен присвоены")
         nonCommand = NonCommand()
         logger.debug("Класс обработки сообщения, не являющегося командой, создан")

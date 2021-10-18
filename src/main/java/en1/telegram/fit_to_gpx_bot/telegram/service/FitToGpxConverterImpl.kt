@@ -1,61 +1,23 @@
-package en1.telegram.fit_to_gpx_bot.utils
+package en1.telegram.fit_to_gpx_bot.telegram.service
 
-import kotlin.Throws
-import kotlin.jvm.JvmStatic
-import java.lang.RuntimeException
+import com.garmin.fit.*
 import org.apache.commons.io.FileUtils
-import com.garmin.fit.Decode
-import com.garmin.fit.MesgBroadcaster
+import org.slf4j.LoggerFactory
+import org.springframework.stereotype.Component
+import java.io.ByteArrayInputStream
+import java.io.File
+import java.io.FileInputStream
+import java.io.IOException
+import java.io.InputStream
+import java.lang.RuntimeException
 import java.lang.StringBuilder
 import java.text.SimpleDateFormat
-import com.garmin.fit.FitRuntimeException
-import com.garmin.fit.RecordMesgListener
-import com.garmin.fit.RecordMesg
-import org.slf4j.LoggerFactory
-import java.io.*
-import java.lang.Exception
 import java.util.*
 
-object MyConverterTest {
-    private val log = LoggerFactory.getLogger(MyConverterTest::class.java)
-    private const val CONVERT_GEO_COORDS = 11930465
-    private const val out_gpx_head = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
-            "<gpx creator=\"Converted by fit2gpx, http://velo100.ru/garmin-fit-to-gpx from {creator}\" version=\"1.1\" " +
-            "xmlns=\"http://www.topografix.com/GPX/1/1\" " +
-            "xmlns:gpxtrx=\"http://www.garmin.com/xmlschemas/GpxExtensions/v3\" " +
-            "xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" " +
-            "xmlns:gpxtpx=\"http://www.garmin.com/xmlschemas/TrackPointExtension/v1\" " +
-            "xmlns:gpxx=\"http://www.garmin.com/xmlschemas/WaypointExtension/v1\" " +
-            "xmlns:nmea=\"http://trekbuddy.net/2009/01/gpx/nmea\">"
-    private const val out_gpx_head1 = " <metadata>\n  <time>{time}</time>\n </metadata>"
-    private const val out_gpx_head2 = " <trk>\n  <name>{FTIFile}</name>\n  <number>{serialnumber}</number>\n  <trkseg>"
-    private const val out_gpx_tail1 = "  </trkseg>\n </trk>"
-    private const val out_gpx_tail2 = "</gpx>"
+@Component
+class FitToGpxConverterImpl : FitToGpxConverter {
 
-    @Throws(Exception::class)
-    @JvmStatic
-    fun main(args: Array<String>) {
-        val fitFile = "/home/max/Downloads/20210720212239.fit"
-        val `in`: FileInputStream
-        `in` = try {
-            FileInputStream(fitFile)
-        } catch (e: IOException) {
-            throw RuntimeException("Error opening file $fitFile [1]")
-        }
-
-        /*ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        in.transferTo(baos);
-        InputStream firstClone = new ByteArrayInputStream(baos.toByteArray());*/
-        val `is` = decode(`in`)
-        val targetFile = File("$fitFile.gpx")
-        FileUtils.copyInputStreamToFile(`is`, targetFile)
-        log.info("Decoded FIT file to '{}'", "$fitFile.gpx")
-        Thread.sleep(100)
-        `in`.close()
-        `is`.close()
-    }
-
-    fun decode(`in`: InputStream): InputStream {
+    override fun decode(`in`: InputStream): InputStream {
         val decode = Decode()
         //decode.skipHeader();        // Use on streams with no header and footer (stream contains FIT defn and data messages only)
         //decode.incompleteStream();  // This suppresses exceptions with unexpected eof (also incorrect crc)
@@ -65,7 +27,6 @@ object MyConverterTest {
         sb.append(out_gpx_head1.replace("{time}", SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'").format(Date())))
         sb.append(out_gpx_head2.replace("{FTIFile}", "test Name").replace("{serialnumber}", 0L.toString()))
         val listener = Listener(sb)
-
         /* try {
             if (!decode.checkFileIntegrity(in)) {
                 throw new RuntimeException("FIT file integrity failed.");
@@ -142,6 +103,42 @@ object MyConverterTest {
                 activity.append("    </extensions>");
             }*/
             activity.append("</trkpt>").append("\n")
+        }
+    }
+
+    companion object {
+        val log = LoggerFactory.getLogger(FitToGpxConverterImpl::class.java)
+        val CONVERT_GEO_COORDS = 11930465
+        val out_gpx_head = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+                "<gpx creator=\"Converted by fit2gpx, http://velo100.ru/garmin-fit-to-gpx from {creator}\" version=\"1.1\" " +
+                "xmlns=\"http://www.topografix.com/GPX/1/1\" " +
+                "xmlns:gpxtrx=\"http://www.garmin.com/xmlschemas/GpxExtensions/v3\" " +
+                "xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" " +
+                "xmlns:gpxtpx=\"http://www.garmin.com/xmlschemas/TrackPointExtension/v1\" " +
+                "xmlns:gpxx=\"http://www.garmin.com/xmlschemas/WaypointExtension/v1\" " +
+                "xmlns:nmea=\"http://trekbuddy.net/2009/01/gpx/nmea\">"
+        val out_gpx_head1 = " <metadata>\n  <time>{time}</time>\n </metadata>"
+        val out_gpx_head2 = " <trk>\n  <name>{FTIFile}</name>\n  <number>{serialnumber}</number>\n  <trkseg>"
+        val out_gpx_tail1 = "  </trkseg>\n </trk>"
+        val out_gpx_tail2 = "</gpx>"
+
+        @JvmStatic
+        fun main(args: Array<String>) {
+            val fitFile = "/home/max/Downloads/20210720212239.fit"
+            val `in`: FileInputStream
+            `in` = try {
+                FileInputStream(fitFile)
+            } catch (e: IOException) {
+                throw RuntimeException("Error opening file $fitFile [1]")
+            }
+            val decoder = FitToGpxConverterImpl();
+            val `is` = decoder.decode(`in`)
+            val targetFile = File("$fitFile.gpx")
+            FileUtils.copyInputStreamToFile(`is`, targetFile)
+            log.info("Decoded FIT file to '{}'", "$fitFile.gpx")
+            Thread.sleep(100)
+            `in`.close()
+            `is`.close()
         }
     }
 }
