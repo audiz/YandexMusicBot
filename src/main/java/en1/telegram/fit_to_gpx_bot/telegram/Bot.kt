@@ -49,7 +49,7 @@ class Bot(botName: String, botToken: String) : TelegramLongPollingCommandBot() {
                 val stream: InputStream = MyConverterTest.decode(`is`)
                 val sendDocument = SendDocument()
                 sendDocument.setChatId(chatId.toString())
-                sendDocument.setDocument(InputFile(stream, String.format("%s.gpx", doc_name)))
+                sendDocument.setDocument(InputFile(stream, String.format("%s.gpx", doc_name.substringBeforeLast("."))))
                 execute(sendDocument)
             } catch (e: Exception) {
                 e.printStackTrace()
