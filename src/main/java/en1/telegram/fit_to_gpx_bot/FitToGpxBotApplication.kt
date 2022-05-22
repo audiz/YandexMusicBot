@@ -6,7 +6,7 @@ import org.springframework.boot.runApplication
 import org.telegram.telegrambots.meta.TelegramBotsApi
 import org.telegram.telegrambots.updatesreceivers.DefaultBotSession
 
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = ["yandex", "en1"])
 open class FitToGpxBotApplication
 
 fun main(args: Array<String>) {
