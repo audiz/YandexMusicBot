@@ -63,11 +63,14 @@ class CallbackMusicActionsImpl(val yandexMusic: YandexMusic, val callbackTypes: 
         //logger.info("processPagerTrackSearch update = {}", update)
         val page = callback.page
         val realPageForRequest = ((page - 1) * TRACKS_PER_PAGE) / 100
+
         val search = yandexMusic.searchTrack(callback.searchString, realPageForRequest)
         val rowList: MutableList<List<InlineKeyboardButton>> = ArrayList()
 
-        createTracksButtons(search.tracks.items.drop((page - 1) * TRACKS_PER_PAGE).take(TRACKS_PER_PAGE), rowList, callback.searchString)
-        rowList.add(pagesButtonsRow(search.tracks.total, page, callback.searchString))
+        val total = if (search.tracks.total > 200) 200 else search.tracks.total
+
+        createTracksButtons(search.tracks.items.drop(realPageForRequest * TRACKS_PER_PAGE).take(TRACKS_PER_PAGE), rowList, callback.searchString)
+        rowList.add(pagesButtonsRow(total, page, callback.searchString))
 
         val inlineKeyboardMarkup = InlineKeyboardMarkup()
         inlineKeyboardMarkup.keyboard = rowList
@@ -220,5 +223,6 @@ class CallbackMusicActionsImpl(val yandexMusic: YandexMusic, val callbackTypes: 
         }
         return pagesButtonsRow
     }
+
 
 }

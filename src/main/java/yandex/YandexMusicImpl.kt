@@ -2,15 +2,17 @@ package yandex
 
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import org.apache.commons.httpclient.HttpClient
-import org.apache.commons.httpclient.methods.GetMethod
+import org.apache.http.client.methods.HttpGet
+import org.apache.http.impl.client.CloseableHttpClient
+import org.apache.http.impl.client.HttpClients
+import org.apache.http.util.EntityUtils
 import org.json.JSONObject
 import org.json.XML
 import org.springframework.stereotype.Component
 import yandex.dto.ArtistSearchDTO
-import yandex.dto.download.DownloadInfoDTO
 import yandex.dto.SearchDTO
 import yandex.dto.TrackSearchDTO
+import yandex.dto.download.DownloadInfoDTO
 import yandex.dto.download.StorageDTO
 import yandex.dto.download.XmlDownloadDTO
 import java.io.InputStream
@@ -22,28 +24,36 @@ import java.nio.file.StandardCopyOption
 class YandexMusicImpl: YandexMusic {
 
     companion object {
-        val client = HttpClient()
+        val httpClient: CloseableHttpClient = HttpClients.createDefault()
         val mapper = jacksonObjectMapper()
         init {
             mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
         }
     }
 
+    private val yandexCookie: String?
+
+    init {
+        val getenv = System.getenv()
+        yandexCookie = getenv!!["YANDEX_COOKIE"]!!
+    }
+
     @Throws(Exception::class)
     override fun search(search: String): SearchDTO {
 
-        val getMethod = GetMethod("https://music.yandex.ru/handlers/music-search.jsx?text=$search&type=all&ncrnd=0.04640457655433827&clientNow=${System.currentTimeMillis()}&lang=ru&external-domain=")
-        getMethod.setRequestHeader("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:99.0) Gecko/20100101 Firefox/99.0")
-        getMethod.setRequestHeader("Accept", "application/json, text/javascript, */*; q=0.01")
-        getMethod.setRequestHeader("Accept-Language", "en-US,en;q=0.5")
-        getMethod.setRequestHeader("X-Requested-With", "XMLHttpRequest")
-        getMethod.setRequestHeader("Connection", "keep-alive")
-        getMethod.setRequestHeader("Sec-Fetch-Dest", "empty")
-        getMethod.setRequestHeader("Sec-Fetch-Mode", "cors")
-        getMethod.setRequestHeader("Sec-Fetch-Site", "same-origin")
+        val request = HttpGet("https://music.yandex.ru/handlers/music-search.jsx?text=$search&type=all&ncrnd=0.04640457655433827&clientNow=${System.currentTimeMillis()}&lang=ru&external-domain=")
+        request.addHeader("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:99.0) Gecko/20100101 Firefox/99.0")
+        request.addHeader("Accept", "application/json, text/javascript, */*; q=0.01")
+        request.addHeader("Accept-Language", "en-US,en;q=0.5")
+        request.addHeader("X-Requested-With", "XMLHttpRequest")
+        request.addHeader("Connection", "keep-alive")
+        request.addHeader("Sec-Fetch-Dest", "empty")
+        request.addHeader("Sec-Fetch-Mode", "cors")
+        request.addHeader("Sec-Fetch-Site", "same-origin")
 
-        client.executeMethod(getMethod)
-        val jsonString = getMethod.responseBodyAsString
+        val response = httpClient.execute(request)
+        val entity = response.entity
+        val jsonString = EntityUtils.toString(entity)
         //println(jsonString)
 
         val searchData = mapper.readValue(jsonString, SearchDTO::class.java)
@@ -53,18 +63,19 @@ class YandexMusicImpl: YandexMusic {
     }
 
     override fun searchTrack(search: String, page: Int): TrackSearchDTO {
-       val getMethod = GetMethod("https://music.yandex.ru/handlers/music-search.jsx?text=$search&type=tracks&page=$page&ncrnd=0.04640457655433827&clientNow=${System.currentTimeMillis()}&lang=ru&external-domain=")
-        getMethod.setRequestHeader("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:99.0) Gecko/20100101 Firefox/99.0")
-        getMethod.setRequestHeader("Accept", "application/json, text/javascript, */*; q=0.01")
-        getMethod.setRequestHeader("Accept-Language", "en-US,en;q=0.5")
-        getMethod.setRequestHeader("X-Requested-With", "XMLHttpRequest")
-        getMethod.setRequestHeader("Connection", "keep-alive")
-        getMethod.setRequestHeader("Sec-Fetch-Dest", "empty")
-        getMethod.setRequestHeader("Sec-Fetch-Mode", "cors")
-        getMethod.setRequestHeader("Sec-Fetch-Site", "same-origin")
+        val request = HttpGet("https://music.yandex.ru/handlers/music-search.jsx?text=$search&type=tracks&page=$page&ncrnd=0.04640457655433827&clientNow=${System.currentTimeMillis()}&lang=ru&external-domain=")
+        request.addHeader("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:99.0) Gecko/20100101 Firefox/99.0")
+        request.addHeader("Accept", "application/json, text/javascript, */*; q=0.01")
+        request.addHeader("Accept-Language", "en-US,en;q=0.5")
+        request.addHeader("X-Requested-With", "XMLHttpRequest")
+        request.addHeader("Connection", "keep-alive")
+        request.addHeader("Sec-Fetch-Dest", "empty")
+        request.addHeader("Sec-Fetch-Mode", "cors")
+        request.addHeader("Sec-Fetch-Site", "same-origin")
 
-        client.executeMethod(getMethod)
-        val jsonString = getMethod.responseBodyAsString
+        val response = httpClient.execute(request)
+        val entity = response.entity
+        val jsonString = EntityUtils.toString(entity)
         //println(jsonString)
 
         val searchData = mapper.readValue(jsonString, TrackSearchDTO::class.java)
@@ -74,18 +85,19 @@ class YandexMusicImpl: YandexMusic {
     }
 
     override fun searchTrack(artistId: Int): ArtistSearchDTO {
-        val getMethod = GetMethod("https://music.yandex.ru/handlers/artist.jsx?artist=$artistId&what=tracks&sort=&dir=&period=&lang=ru&external-domain=")
-        getMethod.setRequestHeader("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:99.0) Gecko/20100101 Firefox/99.0")
-        getMethod.setRequestHeader("Accept", "application/json, text/javascript, */*; q=0.01")
-        getMethod.setRequestHeader("Accept-Language", "en-US,en;q=0.5")
-        getMethod.setRequestHeader("X-Requested-With", "XMLHttpRequest")
-        getMethod.setRequestHeader("Connection", "keep-alive")
-        getMethod.setRequestHeader("Sec-Fetch-Dest", "empty")
-        getMethod.setRequestHeader("Sec-Fetch-Mode", "cors")
-        getMethod.setRequestHeader("Sec-Fetch-Site", "same-origin")
+        val request = HttpGet("https://music.yandex.ru/handlers/artist.jsx?artist=$artistId&what=tracks&sort=&dir=&period=&lang=ru&external-domain=")
+        request.addHeader("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:99.0) Gecko/20100101 Firefox/99.0")
+        request.addHeader("Accept", "application/json, text/javascript, */*; q=0.01")
+        request.addHeader("Accept-Language", "en-US,en;q=0.5")
+        request.addHeader("X-Requested-With", "XMLHttpRequest")
+        request.addHeader("Connection", "keep-alive")
+        request.addHeader("Sec-Fetch-Dest", "empty")
+        request.addHeader("Sec-Fetch-Mode", "cors")
+        request.addHeader("Sec-Fetch-Site", "same-origin")
 
-        client.executeMethod(getMethod)
-        val jsonString = getMethod.responseBodyAsString
+        val response = httpClient.execute(request)
+        val entity = response.entity
+        val jsonString = EntityUtils.toString(entity)
         //println(jsonString)
 
         val searchData = mapper.readValue(jsonString, ArtistSearchDTO::class.java)
@@ -97,18 +109,19 @@ class YandexMusicImpl: YandexMusic {
 
 
     override fun getArtist(id: Int): ArtistSearchDTO {
-        val getMethod = GetMethod("https://music.yandex.ru/handlers/artist.jsx?artist=$id&lang=ru&external-domain=")
-        getMethod.setRequestHeader("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:99.0) Gecko/20100101 Firefox/99.0")
-        getMethod.setRequestHeader("Accept", "application/json, text/javascript, */*; q=0.01")
-        getMethod.setRequestHeader("Accept-Language", "en-US,en;q=0.5")
-        getMethod.setRequestHeader("X-Requested-With", "XMLHttpRequest")
-        getMethod.setRequestHeader("Connection", "keep-alive")
-        getMethod.setRequestHeader("Sec-Fetch-Dest", "empty")
-        getMethod.setRequestHeader("Sec-Fetch-Mode", "cors")
-        getMethod.setRequestHeader("Sec-Fetch-Site", "same-origin")
+        val request = HttpGet("https://music.yandex.ru/handlers/artist.jsx?artist=$id&lang=ru&external-domain=")
+        request.addHeader("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:99.0) Gecko/20100101 Firefox/99.0")
+        request.addHeader("Accept", "application/json, text/javascript, */*; q=0.01")
+        request.addHeader("Accept-Language", "en-US,en;q=0.5")
+        request.addHeader("X-Requested-With", "XMLHttpRequest")
+        request.addHeader("Connection", "keep-alive")
+        request.addHeader("Sec-Fetch-Dest", "empty")
+        request.addHeader("Sec-Fetch-Mode", "cors")
+        request.addHeader("Sec-Fetch-Site", "same-origin")
 
-        client.executeMethod(getMethod)
-        val jsonString = getMethod.responseBodyAsString
+        val response = httpClient.execute(request)
+        val entity = response.entity
+        val jsonString = EntityUtils.toString(entity)
         //println(jsonString)
 
         val artistData = mapper.readValue(jsonString, ArtistSearchDTO::class.java)
@@ -118,45 +131,45 @@ class YandexMusicImpl: YandexMusic {
     }
 
     override fun findStorage(trackId: Int, artistId: Int, search: String): StorageDTO {
-        val getMethod =
-            GetMethod("https://music.yandex.ru/api/v2.1/handlers/track/$trackId:$artistId/web-search-track-track-saved/download/m?hq=0&external-domain=")
-        getMethod.setRequestHeader("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:99.0) Gecko/20100101 Firefox/99.0")
-        getMethod.setRequestHeader("Accept", "application/json; q=1.0, text/*; q=0.8, */*; q=0.1")
-        getMethod.setRequestHeader("Accept-Language", "en-US,en;q=0.5")
-        getMethod.setRequestHeader("Referer", "https://music.yandex.ru/search?text=$search")
-        getMethod.setRequestHeader("X-Retpath-Y", "https%3A%2F%2Fmusic.yandex.ru%2Fsearch%3Ftext%3D$search")
-        getMethod.setRequestHeader("X-Yandex-Music-Client", "YandexMusicAPI")
-        getMethod.setRequestHeader("X-Current-UID", "23858391")
-        getMethod.setRequestHeader("X-Requested-With", "XMLHttpRequest")
-        getMethod.setRequestHeader("Connection", "keep-alive")
-        getMethod.setRequestHeader(
-            "Cookie",
-            "Session_id=3:1652866985.5.0.1631726116372:qerc1A:15.1.2:1|23858391.0.2|3:252517.474832.isxX6h4Gn2xIy3fzgVKMHWhx7ys"
-        )
-        getMethod.setRequestHeader("Sec-Fetch-Dest", "empty")
-        getMethod.setRequestHeader("Sec-Fetch-Mode", "cors")
-        getMethod.setRequestHeader("Sec-Fetch-Site", "same-origin")
+        val request = HttpGet("https://music.yandex.ru/api/v2.1/handlers/track/$trackId:$artistId/web-search-track-track-saved/download/m?hq=0&external-domain=")
+        request.addHeader("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:99.0) Gecko/20100101 Firefox/99.0")
+        request.addHeader("Accept", "application/json; q=1.0, text/*; q=0.8, */*; q=0.1")
+        request.addHeader("Accept-Language", "en-US,en;q=0.5")
+        request.addHeader("Referer", "https://music.yandex.ru/search?text=$search")
+        request.addHeader("X-Retpath-Y", "https%3A%2F%2Fmusic.yandex.ru%2Fsearch%3Ftext%3D$search")
+        request.addHeader("X-Yandex-Music-Client", "YandexMusicAPI")
+        request.addHeader("X-Current-UID", "23858391")
+        request.addHeader("X-Requested-With", "XMLHttpRequest")
+        request.addHeader("Connection", "keep-alive")
+        if (yandexCookie != null) {
+            request.addHeader("Cookie", yandexCookie)
+        }
+        request.addHeader("Sec-Fetch-Dest", "empty")
+        request.addHeader("Sec-Fetch-Mode", "cors")
+        request.addHeader("Sec-Fetch-Site", "same-origin")
 
-        client.executeMethod(getMethod)
-        val jsonString = getMethod.responseBodyAsString
+        val response = httpClient.execute(request)
+        val entity = response.entity
+        val jsonString = EntityUtils.toString(entity)
 
         return mapper.readValue(jsonString, StorageDTO::class.java)
     }
 
     override fun findFileLocation(storageDTO: StorageDTO, search: String): DownloadInfoDTO {
-        val getMethod = GetMethod("https:${storageDTO.src}")
-        getMethod.setRequestHeader("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:99.0) Gecko/20100101 Firefox/99.0")
-        getMethod.setRequestHeader("Accept", "application/json; q=1.0, text/*; q=0.8, */*; q=0.1")
-        getMethod.setRequestHeader("Accept-Language", "en-US,en;q=0.5")
-        getMethod.setRequestHeader("Referer", "https://music.yandex.ru/search?text=$search")
-        getMethod.setRequestHeader("Origin", "https://music.yandex.ru")
-        getMethod.setRequestHeader("Connection", "keep-alive")
-        getMethod.setRequestHeader("Sec-Fetch-Dest", "empty")
-        getMethod.setRequestHeader("Sec-Fetch-Mode", "cors")
-        getMethod.setRequestHeader("Sec-Fetch-Site", "cross-site")
+        val request = HttpGet("https:${storageDTO.src}")
+        request.addHeader("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:99.0) Gecko/20100101 Firefox/99.0")
+        request.addHeader("Accept", "application/json; q=1.0, text/*; q=0.8, */*; q=0.1")
+        request.addHeader("Accept-Language", "en-US,en;q=0.5")
+        request.addHeader("Referer", "https://music.yandex.ru/search?text=$search")
+        request.addHeader("Origin", "https://music.yandex.ru")
+        request.addHeader("Connection", "keep-alive")
+        request.addHeader("Sec-Fetch-Dest", "empty")
+        request.addHeader("Sec-Fetch-Mode", "cors")
+        request.addHeader("Sec-Fetch-Site", "cross-site")
 
-        client.executeMethod(getMethod)
-        val xmlString = getMethod.responseBodyAsString
+        val response = httpClient.execute(request)
+        val entity = response.entity
+        val xmlString = EntityUtils.toString(entity)
 
         val xmlJSONObj: JSONObject = XML.toJSONObject(xmlString)
         val jsonPrettyPrintString = xmlJSONObj.toString(0)
@@ -166,38 +179,37 @@ class YandexMusicImpl: YandexMusic {
     }
 
     override fun downloadFile(downloadInfo: DownloadInfoDTO, songName: String, search: String) {
-        val getMethod = GetMethod("https://${downloadInfo.host}/get-mp3/68cb293afda65aea883b5abc5dea8dbb/${downloadInfo.ts}${downloadInfo.path}")
-        getMethod.setRequestHeader("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:99.0) Gecko/20100101 Firefox/99.0")
-        getMethod.setRequestHeader("Accept", "application/json; q=1.0, text/*; q=0.8, */*; q=0.1")
-        getMethod.setRequestHeader("Accept-Language", "en-US,en;q=0.5")
-        getMethod.setRequestHeader("Referer", "https://music.yandex.ru/search?text=$search")
-        getMethod.setRequestHeader("Origin", "https://music.yandex.ru")
-        getMethod.setRequestHeader("Connection", "keep-alive")
-        getMethod.setRequestHeader("Sec-Fetch-Dest", "empty")
-        getMethod.setRequestHeader("Sec-Fetch-Mode", "cors")
-        getMethod.setRequestHeader("Sec-Fetch-Site", "cross-site")
+        val request = HttpGet("https://${downloadInfo.host}/get-mp3/68cb293afda65aea883b5abc5dea8dbb/${downloadInfo.ts}${downloadInfo.path}")
+        request.addHeader("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:99.0) Gecko/20100101 Firefox/99.0")
+        request.addHeader("Accept", "application/json; q=1.0, text/*; q=0.8, */*; q=0.1")
+        request.addHeader("Accept-Language", "en-US,en;q=0.5")
+        request.addHeader("Referer", "https://music.yandex.ru/search?text=$search")
+        request.addHeader("Origin", "https://music.yandex.ru")
+        request.addHeader("Connection", "keep-alive")
+        request.addHeader("Sec-Fetch-Dest", "empty")
+        request.addHeader("Sec-Fetch-Mode", "cors")
+        request.addHeader("Sec-Fetch-Site", "cross-site")
 
-        client.executeMethod(getMethod)
-
-        val inputStream = getMethod.responseBodyAsStream
+        val response = httpClient.execute(request)
+        val inputStream = response.entity.content
 
         Files.copy(inputStream, Paths.get("/home/max/Downloads/$songName.mp3"), StandardCopyOption.REPLACE_EXISTING);
     }
 
     override fun downloadFileAsStream(downloadInfo: DownloadInfoDTO, songName: String, search: String): InputStream {
-        val getMethod = GetMethod("https://${downloadInfo.host}/get-mp3/68cb293afda65aea883b5abc5dea8dbb/${downloadInfo.ts}${downloadInfo.path}")
-        getMethod.setRequestHeader("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:99.0) Gecko/20100101 Firefox/99.0")
-        getMethod.setRequestHeader("Accept", "application/json; q=1.0, text/*; q=0.8, */*; q=0.1")
-        getMethod.setRequestHeader("Accept-Language", "en-US,en;q=0.5")
-        getMethod.setRequestHeader("Referer", "https://music.yandex.ru/search?text=$search")
-        getMethod.setRequestHeader("Origin", "https://music.yandex.ru")
-        getMethod.setRequestHeader("Connection", "keep-alive")
-        getMethod.setRequestHeader("Sec-Fetch-Dest", "empty")
-        getMethod.setRequestHeader("Sec-Fetch-Mode", "cors")
-        getMethod.setRequestHeader("Sec-Fetch-Site", "cross-site")
+        val request = HttpGet("https://${downloadInfo.host}/get-mp3/68cb293afda65aea883b5abc5dea8dbb/${downloadInfo.ts}${downloadInfo.path}")
+        request.addHeader("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:99.0) Gecko/20100101 Firefox/99.0")
+        request.addHeader("Accept", "application/json; q=1.0, text/*; q=0.8, */*; q=0.1")
+        request.addHeader("Accept-Language", "en-US,en;q=0.5")
+        request.addHeader("Referer", "https://music.yandex.ru/search?text=$search")
+        request.addHeader("Origin", "https://music.yandex.ru")
+        request.addHeader("Connection", "keep-alive")
+        request.addHeader("Sec-Fetch-Dest", "empty")
+        request.addHeader("Sec-Fetch-Mode", "cors")
+        request.addHeader("Sec-Fetch-Site", "cross-site")
 
-        client.executeMethod(getMethod)
+        val response = httpClient.execute(request)
 
-        return getMethod.responseBodyAsStream
+        return response.entity.content
     }
 }
