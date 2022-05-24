@@ -18,7 +18,7 @@ interface YandexMusic {
 
     fun getSimilar(artistId: Int): ArtistSearchDTO
 
-    fun findStorage(trackId: Int, artistId: Int, search: String): Storage
+    fun findStorage(trackId: Int, artistId: Int): Storage
 
     fun findFileLocation(storageDTO: Storage, search: String): DownloadInfo
 

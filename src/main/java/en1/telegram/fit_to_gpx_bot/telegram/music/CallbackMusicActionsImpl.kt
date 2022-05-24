@@ -42,6 +42,7 @@ class CallbackMusicActionsImpl(val yandexMusic: YandexMusic, val callbackTypes: 
         createTracksButtons(artistSearch.tracks.drop((page - 1) * TRACKS_PER_PAGE).take(TRACKS_PER_PAGE), rowList, callback.searchString, artistSearch.artist.name)
         rowList.add(pagesButtonsRow(artistSearch.tracks.size, page, callback.searchString, callback.artistId))
         rowList.add(artistButtonsRow(artistSearch.similar.take(3), callback.searchString))
+        rowList.add(artistButtonsShowMoreRow(callback.artistId))
 
         val inlineKeyboardMarkup = InlineKeyboardMarkup()
         inlineKeyboardMarkup.keyboard = rowList
@@ -162,7 +163,7 @@ class CallbackMusicActionsImpl(val yandexMusic: YandexMusic, val callbackTypes: 
             }
         }
 
-        val storage = yandexMusic.findStorage(callback.trackId, callback.artistId, callback.searchString)
+        val storage = yandexMusic.findStorage(callback.trackId, callback.artistId)
         val fileLocation = yandexMusic.findFileLocation(storage, callback.searchString)
         val stream = yandexMusic.downloadFileAsStream(fileLocation, songName, callback.searchString)
         val sendDocument = SendDocument()
@@ -206,7 +207,7 @@ class CallbackMusicActionsImpl(val yandexMusic: YandexMusic, val callbackTypes: 
         items.map {
             val inlineArtistButton = InlineKeyboardButton()
             inlineArtistButton.text = it.name
-            inlineArtistButton.callbackData = callbackTypes.artistCallback(it.id, it.name, searchText)
+            inlineArtistButton.callbackData = callbackTypes.artistTracksWithPagesCallback(1, it.id, searchText)
             artistsButtonsRow.add(inlineArtistButton)
         }
         return artistsButtonsRow

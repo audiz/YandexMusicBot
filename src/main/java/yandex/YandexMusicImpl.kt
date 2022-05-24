@@ -2,12 +2,14 @@ package yandex
 
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import en1.telegram.fit_to_gpx_bot.telegram.callback.CallbackTypesImpl
 import org.apache.http.client.methods.HttpGet
 import org.apache.http.impl.client.CloseableHttpClient
 import org.apache.http.impl.client.HttpClients
 import org.apache.http.util.EntityUtils
 import org.json.JSONObject
 import org.json.XML
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import yandex.dto.ArtistSearchDTO
 import yandex.dto.SearchDTO
@@ -24,6 +26,7 @@ import java.nio.file.StandardCopyOption
 class YandexMusicImpl: YandexMusic {
 
     companion object {
+        private val logger = LoggerFactory.getLogger(YandexMusicImpl::class.java)
         val httpClient: CloseableHttpClient = HttpClients.createDefault()
         val mapper = jacksonObjectMapper()
         init {
@@ -155,15 +158,14 @@ class YandexMusicImpl: YandexMusic {
         return artistData
     }
 
-    override fun findStorage(trackId: Int, artistId: Int, search: String): Storage {
+    // TODO return nullable and wrap answer to object
+    override fun findStorage(trackId: Int, artistId: Int): Storage {
         val request = HttpGet("https://music.yandex.ru/api/v2.1/handlers/track/$trackId:$artistId/web-search-track-track-saved/download/m?hq=0&external-domain=")
         request.addHeader("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:99.0) Gecko/20100101 Firefox/99.0")
         request.addHeader("Accept", "application/json; q=1.0, text/*; q=0.8, */*; q=0.1")
         request.addHeader("Accept-Language", "en-US,en;q=0.5")
-        if (search.isNotEmpty()) {
-            request.addHeader("Referer", "https://music.yandex.ru/search?text=$search")
-            request.addHeader("X-Retpath-Y", "https%3A%2F%2Fmusic.yandex.ru%2Fsearch%3Ftext%3D$search")
-        }
+        request.addHeader("Referer", "https://music.yandex.ru/artist/$artistId/tracks")
+        request.addHeader("X-Retpath-Y", "https%3A%2F%2Fmusic.yandex.ru%2Fartist%2F$artistId%2Ftracks")
         request.addHeader("X-Yandex-Music-Client", "YandexMusicAPI")
         request.addHeader("X-Current-UID", "23858391")
         request.addHeader("X-Requested-With", "XMLHttpRequest")
@@ -178,6 +180,10 @@ class YandexMusicImpl: YandexMusic {
         val response = httpClient.execute(request)
         val entity = response.entity
         val jsonString = EntityUtils.toString(entity)
+
+        if (jsonString.isEmpty()) {
+            logger.warn("Failed to get storage for trackId = $trackId, artistId = $artistId")
+        }
 
         return mapper.readValue(jsonString, Storage::class.java)
     }
