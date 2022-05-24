@@ -1,6 +1,6 @@
-package yandex.dto.search
+package yandex.dto.domain
 
-data class AlbumDTO(
+data class Album(
     val id: Int,
     val title: String?,
     val year: Int

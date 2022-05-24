@@ -1,6 +1,6 @@
-package yandex.dto.search
+package yandex.dto.domain
 
-data class PagerDTO(
+data class Pager(
     val total: String,
     val perPage: String,
     val page: String

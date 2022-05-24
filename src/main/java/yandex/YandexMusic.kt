@@ -1,10 +1,10 @@
 package yandex
 
 import yandex.dto.ArtistSearchDTO
-import yandex.dto.download.DownloadInfoDTO
+import yandex.dto.download.DownloadInfo
 import yandex.dto.SearchDTO
 import yandex.dto.TrackSearchDTO
-import yandex.dto.download.StorageDTO
+import yandex.dto.download.Storage
 import java.io.InputStream
 
 interface YandexMusic {
@@ -16,11 +16,13 @@ interface YandexMusic {
 
     fun getArtist(id: Int): ArtistSearchDTO
 
-    fun findStorage(trackId: Int, artistId: Int, search: String): StorageDTO
+    fun getSimilar(artistId: Int): ArtistSearchDTO
 
-    fun findFileLocation(storageDTO: StorageDTO, search: String): DownloadInfoDTO
+    fun findStorage(trackId: Int, artistId: Int, search: String): Storage
 
-    fun downloadFile(downloadInfo: DownloadInfoDTO, songName: String, search: String)
+    fun findFileLocation(storageDTO: Storage, search: String): DownloadInfo
 
-    fun downloadFileAsStream(downloadInfo: DownloadInfoDTO, songName: String, search: String): InputStream
+    fun downloadFile(downloadInfo: DownloadInfo, songName: String, search: String)
+
+    fun downloadFileAsStream(downloadInfo: DownloadInfo, songName: String, search: String): InputStream
 }

@@ -19,7 +19,7 @@ data class TrackCallback(
  * Artist button was clicked
  * */
 data class ArtistCallback(
-    val id: Int,
+    val artistId: Int,
     val name: String,
     val searchString: String
 ) : Callback()
@@ -27,7 +27,7 @@ data class ArtistCallback(
 /**
  * Page number was clicked for search string tracks
  * */
-data class PagerTrackSearchCallback(
+data class SearchTrackWithPagesCallback(
     val page: Int,
     val searchString: String
 ) : Callback()
@@ -35,8 +35,15 @@ data class PagerTrackSearchCallback(
 /**
  * Page number was clicked for artists tracks
  * */
-data class PagerTrackArtistCallback(
+data class ArtistTrackWithPagesCallback(
     val page: Int,
     val artistId: Int,
     val searchString: String
+) : Callback()
+
+/**
+ * Similar button was clicked
+ * */
+data class SimilarCallback(
+    val artistId: Int
 ) : Callback()

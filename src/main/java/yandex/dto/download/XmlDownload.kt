@@ -2,7 +2,7 @@ package yandex.dto.download
 
 import com.fasterxml.jackson.annotation.JsonProperty
 
-data class XmlDownloadDTO(
+data class XmlDownload(
     @JsonProperty("download-info")
-    val downloadInfo: DownloadInfoDTO
+    val downloadInfo: DownloadInfo
 )

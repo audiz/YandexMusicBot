@@ -1,9 +1,6 @@
 package en1.telegram.fit_to_gpx_bot.telegram.callback
 
-import en1.telegram.fit_to_gpx_bot.telegram.callback.dto.ArtistCallback
-import en1.telegram.fit_to_gpx_bot.telegram.callback.dto.PagerTrackArtistCallback
-import en1.telegram.fit_to_gpx_bot.telegram.callback.dto.PagerTrackSearchCallback
-import en1.telegram.fit_to_gpx_bot.telegram.callback.dto.TrackCallback
+import en1.telegram.fit_to_gpx_bot.telegram.callback.dto.*
 import en1.telegram.fit_to_gpx_bot.telegram.service.IntByteArraysConverter
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -21,24 +18,32 @@ class CallbackTypesImpl : CallbackTypes {
         const val ARTIST_CALLBACK_IDENTIFIER = 2.toByte()
         const val PAGER_TRACK_SEARCH_CALLBACK_IDENTIFIER = 3.toByte()
         const val PAGER_TRACK_ARTIST_CALLBACK_IDENTIFIER = 4.toByte()
+        const val SIMILAR_ARTIST_CALLBACK_IDENTIFIER = 5.toByte()
     }
 
-    override fun generateTrackCallback(track: Int, artist: Int, search: String): String {
+    override fun trackCallback(track: Int, artist: Int, search: String): String {
         return generateStringFromData(TRACK_CALLBACK_IDENTIFIER, intArrayOf(track, track), null, search)
     }
 
-    override fun generateArtistCallback(id: Int, name: String, search: String): String {
+    override fun artistCallback(id: Int, name: String, search: String): String {
         return generateStringFromData(ARTIST_CALLBACK_IDENTIFIER, intArrayOf(id), name, search)
     }
 
-    override fun generateTrackSearchPagerCallback(page: Int, search: String): String {
+    override fun searchTracksWithPagesCallback(page: Int, search: String): String {
         return generateStringFromData(PAGER_TRACK_SEARCH_CALLBACK_IDENTIFIER, intArrayOf(page), null, search)
     }
 
-    override fun generateTrackArtistPagerCallback(page: Int, artistId: Int, search: String): String {
+    override fun artistTracksWithPagesCallback(page: Int, artistId: Int, search: String): String {
         return generateStringFromData(PAGER_TRACK_ARTIST_CALLBACK_IDENTIFIER, intArrayOf(page, artistId), null, search)
     }
 
+    override fun similarCallback(artistId: Int): String {
+        return generateStringFromData(SIMILAR_ARTIST_CALLBACK_IDENTIFIER, intArrayOf(artistId), null, null)
+    }
+
+    /**
+     * Create callback object type from [callback] string
+     * */
     override fun parseCallback(callback: String): Any? {
         //val callbackId = callback.substringBefore(";")
         val bytesCoded = callback.toByteArray(Charsets.ISO_8859_1)
@@ -57,10 +62,13 @@ class CallbackTypesImpl : CallbackTypes {
             return ArtistCallback(intArr[0], textData, searchString)
         }
         else if (PAGER_TRACK_SEARCH_CALLBACK_IDENTIFIER == callbackId) {
-            return PagerTrackSearchCallback(intArr[0], searchString)
+            return SearchTrackWithPagesCallback(intArr[0], searchString)
         }
         else if (PAGER_TRACK_ARTIST_CALLBACK_IDENTIFIER == callbackId) {
-            return PagerTrackArtistCallback(intArr[0], intArr[1], searchString)
+            return ArtistTrackWithPagesCallback(intArr[0], intArr[1], searchString)
+        }
+        else if (SIMILAR_ARTIST_CALLBACK_IDENTIFIER == callbackId) {
+            return SimilarCallback(intArr[0])
         }
         else {
             logger.info("Unknown callback = {}", callback)
@@ -68,6 +76,9 @@ class CallbackTypesImpl : CallbackTypes {
         }
     }
 
+    /**
+     * Return callback obj from string [callback] by [type]
+     * */
     override fun <T> parseCallback(callback: String, clazz: Class<T>): T? {
         val obj = parseCallback(callback) ?: return null
         if (obj::class.java == clazz) {

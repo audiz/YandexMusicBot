@@ -1,11 +1,11 @@
-package yandex.dto.search
+package yandex.dto.domain
 
-data class TrackItemDTO (
+data class TrackItem (
     val id: Int,
     val realId: Int?,
     val title: String,
     val available: Boolean,
     val durationMs: Int,
-    val albums: List<AlbumDTO>,
-    val artists: List<ArtistDTO>
+    val albums: List<Album>,
+    val artists: List<Artist>
     )

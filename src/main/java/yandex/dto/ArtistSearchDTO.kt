@@ -1,12 +1,13 @@
 package yandex.dto
 
-import yandex.dto.search.ArtistDTO
-import yandex.dto.search.ArtistItemDTO
-import yandex.dto.search.TrackItemDTO
+import yandex.dto.domain.Artist
+import yandex.dto.domain.ArtistItem
+import yandex.dto.domain.TrackItem
 
 data class ArtistSearchDTO(
-    val artist: ArtistDTO,
-    val tracks: List<TrackItemDTO>,
-    val similar: List<ArtistItemDTO>,
+    val artist: Artist,
+    val tracks: List<TrackItem>,
+    val similar: List<ArtistItem>,
+    val allSimilar: List<ArtistItem>,
     val trackIds: List<String>
 )

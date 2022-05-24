@@ -3,10 +3,7 @@ package en1.telegram.fit_to_gpx_bot.telegram
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import en1.telegram.fit_to_gpx_bot.telegram.callback.CallbackTypes
-import en1.telegram.fit_to_gpx_bot.telegram.callback.dto.ArtistCallback
-import en1.telegram.fit_to_gpx_bot.telegram.callback.dto.PagerTrackArtistCallback
-import en1.telegram.fit_to_gpx_bot.telegram.callback.dto.PagerTrackSearchCallback
-import en1.telegram.fit_to_gpx_bot.telegram.callback.dto.TrackCallback
+import en1.telegram.fit_to_gpx_bot.telegram.callback.dto.*
 import en1.telegram.fit_to_gpx_bot.telegram.commands.service.HelpCommand
 import en1.telegram.fit_to_gpx_bot.telegram.music.CallbackMusicActions
 import en1.telegram.fit_to_gpx_bot.telegram.nonCommand.NonCommand
@@ -50,7 +47,7 @@ class Bot(val fitToGpxConverter: FitToGpxConverter, val callbackTypes: CallbackT
             if (msg.hasDocument() && msg.document.fileName.lowercase().endsWith(".fit")) {
                 sendFitDoc(msg, update)
             } else {
-                execute(musicService.sendSearchInfo(msg))
+                execute(musicService.introMsg(msg))
             }
         }
 
@@ -61,10 +58,11 @@ class Bot(val fitToGpxConverter: FitToGpxConverter, val callbackTypes: CallbackT
      * */
     private fun processCallback(update: Update) {
         when (val callback = callbackTypes.parseCallback(update.callbackQuery.data)) {
-            is TrackCallback -> execute(musicService.processTrack(update, callback))
-            is ArtistCallback -> execute(musicService.processArtist(update, callback))
-            is PagerTrackSearchCallback -> execute(musicService.processPagerTrackSearch(update, callback))
-            is PagerTrackArtistCallback -> execute(musicService.processPagerArtistSearch(update, callback))
+            is TrackCallback -> execute(musicService.document(update, callback))
+            is ArtistCallback -> execute(musicService.artistMsg(update, callback))
+            is SearchTrackWithPagesCallback -> execute(musicService.searchTrackWithPagesMsg(update, callback))
+            is ArtistTrackWithPagesCallback -> execute(musicService.artistWithPagesMsg(update, callback))
+            is SimilarCallback -> execute(musicService.similarMsg(update, callback))
             else -> logger.warn("Unknown callback")
         }
 

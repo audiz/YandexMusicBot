@@ -12,9 +12,9 @@ import org.springframework.stereotype.Component
 import yandex.dto.ArtistSearchDTO
 import yandex.dto.SearchDTO
 import yandex.dto.TrackSearchDTO
-import yandex.dto.download.DownloadInfoDTO
-import yandex.dto.download.StorageDTO
-import yandex.dto.download.XmlDownloadDTO
+import yandex.dto.download.DownloadInfo
+import yandex.dto.download.Storage
+import yandex.dto.download.XmlDownload
 import java.io.InputStream
 import java.nio.file.Files
 import java.nio.file.Paths
@@ -130,13 +130,40 @@ class YandexMusicImpl: YandexMusic {
         return artistData
     }
 
-    override fun findStorage(trackId: Int, artistId: Int, search: String): StorageDTO {
+    override fun getSimilar(artistId: Int): ArtistSearchDTO {
+        val request = HttpGet("https://music.yandex.ru/handlers/artist.jsx?artist=$artistId&what=similar&sort=&dir=&period=&lang=ru&external-domain=")
+        request.addHeader("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:99.0) Gecko/20100101 Firefox/99.0")
+        request.addHeader("Accept", "application/json, text/javascript, */*; q=0.01")
+        request.addHeader("Accept-Language", "en-US,en;q=0.5")
+        request.addHeader("Referer", "https://music.yandex.ru/artist/$artistId/similar")
+        request.addHeader("X-Current-UID", "23858391")
+        request.addHeader("X-Retpath-Y", "https://music.yandex.ru/artist/$artistId/similar")
+        request.addHeader("X-Requested-With", "XMLHttpRequest")
+        request.addHeader("Connection", "keep-alive")
+        request.addHeader("Sec-Fetch-Dest", "empty")
+        request.addHeader("Sec-Fetch-Mode", "cors")
+        request.addHeader("Sec-Fetch-Site", "same-origin")
+
+        val response = httpClient.execute(request)
+        val entity = response.entity
+        val jsonString = EntityUtils.toString(entity)
+        //println(jsonString)
+
+        val artistData = mapper.readValue(jsonString, ArtistSearchDTO::class.java)
+        //println(artistData)
+
+        return artistData
+    }
+
+    override fun findStorage(trackId: Int, artistId: Int, search: String): Storage {
         val request = HttpGet("https://music.yandex.ru/api/v2.1/handlers/track/$trackId:$artistId/web-search-track-track-saved/download/m?hq=0&external-domain=")
         request.addHeader("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:99.0) Gecko/20100101 Firefox/99.0")
         request.addHeader("Accept", "application/json; q=1.0, text/*; q=0.8, */*; q=0.1")
         request.addHeader("Accept-Language", "en-US,en;q=0.5")
-        request.addHeader("Referer", "https://music.yandex.ru/search?text=$search")
-        request.addHeader("X-Retpath-Y", "https%3A%2F%2Fmusic.yandex.ru%2Fsearch%3Ftext%3D$search")
+        if (search.isNotEmpty()) {
+            request.addHeader("Referer", "https://music.yandex.ru/search?text=$search")
+            request.addHeader("X-Retpath-Y", "https%3A%2F%2Fmusic.yandex.ru%2Fsearch%3Ftext%3D$search")
+        }
         request.addHeader("X-Yandex-Music-Client", "YandexMusicAPI")
         request.addHeader("X-Current-UID", "23858391")
         request.addHeader("X-Requested-With", "XMLHttpRequest")
@@ -152,15 +179,17 @@ class YandexMusicImpl: YandexMusic {
         val entity = response.entity
         val jsonString = EntityUtils.toString(entity)
 
-        return mapper.readValue(jsonString, StorageDTO::class.java)
+        return mapper.readValue(jsonString, Storage::class.java)
     }
 
-    override fun findFileLocation(storageDTO: StorageDTO, search: String): DownloadInfoDTO {
+    override fun findFileLocation(storageDTO: Storage, search: String): DownloadInfo {
         val request = HttpGet("https:${storageDTO.src}")
         request.addHeader("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:99.0) Gecko/20100101 Firefox/99.0")
         request.addHeader("Accept", "application/json; q=1.0, text/*; q=0.8, */*; q=0.1")
         request.addHeader("Accept-Language", "en-US,en;q=0.5")
-        request.addHeader("Referer", "https://music.yandex.ru/search?text=$search")
+        if (search.isNotEmpty()) {
+            request.addHeader("Referer", "https://music.yandex.ru/search?text=$search")
+        }
         request.addHeader("Origin", "https://music.yandex.ru")
         request.addHeader("Connection", "keep-alive")
         request.addHeader("Sec-Fetch-Dest", "empty")
@@ -174,16 +203,18 @@ class YandexMusicImpl: YandexMusic {
         val xmlJSONObj: JSONObject = XML.toJSONObject(xmlString)
         val jsonPrettyPrintString = xmlJSONObj.toString(0)
 
-        val xmlDownloadDTO = mapper.readValue(jsonPrettyPrintString, XmlDownloadDTO::class.java)
+        val xmlDownloadDTO = mapper.readValue(jsonPrettyPrintString, XmlDownload::class.java)
         return xmlDownloadDTO.downloadInfo
     }
 
-    override fun downloadFile(downloadInfo: DownloadInfoDTO, songName: String, search: String) {
+    override fun downloadFile(downloadInfo: DownloadInfo, songName: String, search: String) {
         val request = HttpGet("https://${downloadInfo.host}/get-mp3/68cb293afda65aea883b5abc5dea8dbb/${downloadInfo.ts}${downloadInfo.path}")
         request.addHeader("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:99.0) Gecko/20100101 Firefox/99.0")
         request.addHeader("Accept", "application/json; q=1.0, text/*; q=0.8, */*; q=0.1")
         request.addHeader("Accept-Language", "en-US,en;q=0.5")
-        request.addHeader("Referer", "https://music.yandex.ru/search?text=$search")
+        if (search.isNotEmpty()) {
+            request.addHeader("Referer", "https://music.yandex.ru/search?text=$search")
+        }
         request.addHeader("Origin", "https://music.yandex.ru")
         request.addHeader("Connection", "keep-alive")
         request.addHeader("Sec-Fetch-Dest", "empty")
@@ -196,20 +227,20 @@ class YandexMusicImpl: YandexMusic {
         Files.copy(inputStream, Paths.get("/home/max/Downloads/$songName.mp3"), StandardCopyOption.REPLACE_EXISTING);
     }
 
-    override fun downloadFileAsStream(downloadInfo: DownloadInfoDTO, songName: String, search: String): InputStream {
+    override fun downloadFileAsStream(downloadInfo: DownloadInfo, songName: String, search: String): InputStream {
         val request = HttpGet("https://${downloadInfo.host}/get-mp3/68cb293afda65aea883b5abc5dea8dbb/${downloadInfo.ts}${downloadInfo.path}")
         request.addHeader("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:99.0) Gecko/20100101 Firefox/99.0")
         request.addHeader("Accept", "application/json; q=1.0, text/*; q=0.8, */*; q=0.1")
         request.addHeader("Accept-Language", "en-US,en;q=0.5")
-        request.addHeader("Referer", "https://music.yandex.ru/search?text=$search")
+        if (search.isNotEmpty()) {
+            request.addHeader("Referer", "https://music.yandex.ru/search?text=$search")
+        }
         request.addHeader("Origin", "https://music.yandex.ru")
         request.addHeader("Connection", "keep-alive")
         request.addHeader("Sec-Fetch-Dest", "empty")
         request.addHeader("Sec-Fetch-Mode", "cors")
         request.addHeader("Sec-Fetch-Site", "cross-site")
 
-        val response = httpClient.execute(request)
-
-        return response.entity.content
+        return httpClient.execute(request).entity.content
     }
 }

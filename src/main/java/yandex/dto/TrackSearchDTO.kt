@@ -1,9 +1,9 @@
 package yandex.dto
 
-import yandex.dto.search.PagerDTO
-import yandex.dto.search.TracksDTO
+import yandex.dto.domain.Pager
+import yandex.dto.domain.Tracks
 
 data class TrackSearchDTO(
-    val tracks: TracksDTO,
-    val pager: PagerDTO
+    val tracks: Tracks,
+    val pager: Pager
 )

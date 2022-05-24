@@ -1,9 +1,9 @@
 package yandex.dto
 
-import yandex.dto.search.ArtistsDTO
-import yandex.dto.search.TracksDTO
+import yandex.dto.domain.Artists
+import yandex.dto.domain.Tracks
 
 data class SearchDTO (
-    val tracks: TracksDTO,
-    val artists: ArtistsDTO
+    val tracks: Tracks,
+    val artists: Artists
 )

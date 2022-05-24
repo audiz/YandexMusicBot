@@ -1,6 +1,6 @@
 package yandex.dto.download
 
-data class StorageDTO (
+data class Storage (
     val codec: String,
     val bitrate: Int,
     val src: String,
