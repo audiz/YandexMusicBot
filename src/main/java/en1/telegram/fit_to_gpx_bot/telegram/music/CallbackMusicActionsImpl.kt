@@ -60,16 +60,15 @@ class CallbackMusicActionsImpl(val yandexMusic: YandexMusic, val callbackTypes: 
      * Pagination for searched tracks
      * */
     override fun processPagerTrackSearch(update: Update, callback: PagerTrackSearchCallback): SendMessage {
-        //logger.info("processPagerTrackSearch update = {}", update)
+        //logger.info("processPagerTrackSearch callback = {}", callback)
         val page = callback.page
         val realPageForRequest = ((page - 1) * TRACKS_PER_PAGE) / 100
-
         val search = yandexMusic.searchTrack(callback.searchString, realPageForRequest)
         val rowList: MutableList<List<InlineKeyboardButton>> = ArrayList()
 
         val total = if (search.tracks.total > 200) 200 else search.tracks.total
 
-        createTracksButtons(search.tracks.items.drop(realPageForRequest * TRACKS_PER_PAGE).take(TRACKS_PER_PAGE), rowList, callback.searchString)
+        createTracksButtons(search.tracks.items.drop(((page - 1) % TRACKS_PER_PAGE) * TRACKS_PER_PAGE).take(TRACKS_PER_PAGE), rowList, callback.searchString)
         rowList.add(pagesButtonsRow(total, page, callback.searchString))
 
         val inlineKeyboardMarkup = InlineKeyboardMarkup()

@@ -46,20 +46,21 @@ class CallbackTypesImpl : CallbackTypes {
         val intSize = bytesCoded[1]
         val intBytes = bytesCoded.copyOfRange(2, intSize.toInt() + 2)
         val intArr = IntByteArraysConverter.convert(intBytes)
-        val string = String(bytesCoded.copyOfRange(intSize.toInt() + 2, bytesCoded.size), Charsets.ISO_8859_1)
+        val rawString = String(bytesCoded.copyOfRange(intSize.toInt() + 2, bytesCoded.size), Charsets.ISO_8859_1)
+        val textData = rawString.substringBeforeLast(";")
+        val searchString = rawString.substringAfterLast(";")
 
         if (TRACK_CALLBACK_IDENTIFIER == callbackId) {
-            return TrackCallback(intArr[0], intArr[1], string)
+            return TrackCallback(intArr[0], intArr[1], searchString)
         }
         else if (ARTIST_CALLBACK_IDENTIFIER == callbackId) {
-            val stringArray = string.split(";")
-            return ArtistCallback(intArr[0], stringArray[0], stringArray[1])
+            return ArtistCallback(intArr[0], textData, searchString)
         }
         else if (PAGER_TRACK_SEARCH_CALLBACK_IDENTIFIER == callbackId) {
-            return PagerTrackSearchCallback(intArr[0], string)
+            return PagerTrackSearchCallback(intArr[0], searchString)
         }
         else if (PAGER_TRACK_ARTIST_CALLBACK_IDENTIFIER == callbackId) {
-            return PagerTrackArtistCallback(intArr[0], intArr[1], string)
+            return PagerTrackArtistCallback(intArr[0], intArr[1], searchString)
         }
         else {
             logger.info("Unknown callback = {}", callback)
@@ -89,7 +90,7 @@ class CallbackTypesImpl : CallbackTypes {
         val beginning = byteArrayOf(callbackId, intLen.toByte())
         var bytesStr = byteArrayOf()
         if (text != null) {
-            bytesStr = text.toByteArray(StandardCharsets.UTF_8)
+            bytesStr = text.toByteArray(StandardCharsets.ISO_8859_1)
         }
         outputStream.write(beginning)
         outputStream.write(bytes)
@@ -97,7 +98,11 @@ class CallbackTypesImpl : CallbackTypes {
 
         var searchStr = byteArrayOf()
         if (search != null) {
-            searchStr = ";$search".toByteArray(StandardCharsets.UTF_8)
+            if (text == null) {
+                searchStr = "$search".toByteArray(StandardCharsets.ISO_8859_1)
+            } else {
+                searchStr = ";$search".toByteArray(StandardCharsets.ISO_8859_1)
+            }
         }
         if (outputStream.size() + searchStr.size <= API_CALLBACK_LENGTH_LIMIT) {
             outputStream.write(searchStr)
