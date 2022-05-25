@@ -138,7 +138,7 @@ class YandexMusicImpl: YandexMusic {
         request.addHeader("Accept", "application/json, text/javascript, */*; q=0.01")
         request.addHeader("Accept-Language", "en-US,en;q=0.5")
         request.addHeader("Referer", "https://music.yandex.ru/artist/$artistId/similar")
-        request.addHeader("X-Current-UID", "23858391")
+        //request.addHeader("X-Current-UID", "23858391")
         request.addHeader("X-Retpath-Y", "https://music.yandex.ru/artist/$artistId/similar")
         request.addHeader("X-Requested-With", "XMLHttpRequest")
         request.addHeader("Connection", "keep-alive")
