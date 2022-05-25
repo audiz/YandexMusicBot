@@ -37,7 +37,7 @@ class YandexMusicImpl: YandexMusic {
 
     init {
         val getenv = System.getenv()
-        yandexCookie = getenv!!["YANDEX_COOKIE"]!!
+        yandexCookie = getenv!!["YANDEX_COOKIE"]
     }
 
     @Throws(Exception::class)
