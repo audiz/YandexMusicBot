@@ -180,10 +180,9 @@ class YandexMusicImpl: YandexMusic {
         val entity = response.entity
         val jsonString = EntityUtils.toString(entity)
 
-        if (jsonString.isEmpty()) {
-            logger.warn("Failed to get storage for trackId = $trackId, artistId = $artistId")
+        if (jsonString.isEmpty() || "{\"error\":\"HTTP-ERROR\"}" == jsonString) {
+            logger.warn("Failed to get storage for trackId = $trackId, artistId = $artistId, jsonString = {}", jsonString)
         }
-        logger.info("jsonString = {}", jsonString)
 
         return mapper.readValue(jsonString, Storage::class.java)
     }
