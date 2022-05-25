@@ -166,7 +166,7 @@ class YandexMusicImpl: YandexMusic {
         request.addHeader("Referer", "https://music.yandex.ru/artist/$artistId/tracks")
         request.addHeader("X-Retpath-Y", "https%3A%2F%2Fmusic.yandex.ru%2Fartist%2F$artistId%2Ftracks")
         request.addHeader("X-Yandex-Music-Client", "YandexMusicAPI")
-        request.addHeader("X-Current-UID", "23858391")
+        //request.addHeader("X-Current-UID", "23858391")
         request.addHeader("X-Requested-With", "XMLHttpRequest")
         request.addHeader("Connection", "keep-alive")
         if (yandexCookie != null) {
