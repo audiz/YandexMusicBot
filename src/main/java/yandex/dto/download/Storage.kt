@@ -5,5 +5,4 @@ data class Storage (
     val bitrate: Int,
     val src: String,
     val gain: Boolean,
-    val preview: Boolean
-    )
+    val preview: Boolean)

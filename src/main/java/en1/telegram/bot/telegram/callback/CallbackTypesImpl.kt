@@ -1,7 +1,7 @@
-package en1.telegram.fit_to_gpx_bot.telegram.callback
+package en1.telegram.bot.telegram.callback
 
-import en1.telegram.fit_to_gpx_bot.telegram.callback.dto.*
-import en1.telegram.fit_to_gpx_bot.telegram.service.IntByteArraysConverter
+import en1.telegram.bot.telegram.callback.dto.*
+import en1.telegram.bot.telegram.service.IntByteArraysConverter
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.io.ByteArrayOutputStream
@@ -15,7 +15,6 @@ class CallbackTypesImpl : CallbackTypes {
         private val logger = LoggerFactory.getLogger(CallbackTypesImpl::class.java)
 
         const val TRACK_CALLBACK_IDENTIFIER = 1.toByte()
-        const val ARTIST_CALLBACK_IDENTIFIER = 2.toByte()
         const val PAGER_TRACK_SEARCH_CALLBACK_IDENTIFIER = 3.toByte()
         const val PAGER_TRACK_ARTIST_CALLBACK_IDENTIFIER = 4.toByte()
         const val SIMILAR_ARTIST_CALLBACK_IDENTIFIER = 5.toByte()
@@ -23,10 +22,6 @@ class CallbackTypesImpl : CallbackTypes {
 
     override fun trackCallback(track: Int, artist: Int, search: String): String {
         return generateStringFromData(TRACK_CALLBACK_IDENTIFIER, intArrayOf(track, track), null, search)
-    }
-
-    override fun artistCallback(id: Int, name: String, search: String): String {
-        return generateStringFromData(ARTIST_CALLBACK_IDENTIFIER, intArrayOf(id), name, search)
     }
 
     override fun searchTracksWithPagesCallback(page: Int, search: String): String {
@@ -44,7 +39,7 @@ class CallbackTypesImpl : CallbackTypes {
     /**
      * Create callback object type from [callback] string
      * */
-    override fun parseCallback(callback: String): Any? {
+    override fun parseCallback(callback: String): Callbacks? {
         //val callbackId = callback.substringBefore(";")
         val bytesCoded = callback.toByteArray(Charsets.ISO_8859_1)
         val callbackId = bytesCoded[0]
@@ -57,9 +52,6 @@ class CallbackTypesImpl : CallbackTypes {
 
         if (TRACK_CALLBACK_IDENTIFIER == callbackId) {
             return TrackCallback(intArr[0], intArr[1], searchString)
-        }
-        else if (ARTIST_CALLBACK_IDENTIFIER == callbackId) {
-            return ArtistCallback(intArr[0], textData, searchString)
         }
         else if (PAGER_TRACK_SEARCH_CALLBACK_IDENTIFIER == callbackId) {
             return SearchTrackWithPagesCallback(intArr[0], searchString)
@@ -109,11 +101,8 @@ class CallbackTypesImpl : CallbackTypes {
 
         var searchStr = byteArrayOf()
         if (search != null) {
-            if (text == null) {
-                searchStr = "$search".toByteArray(StandardCharsets.ISO_8859_1)
-            } else {
-                searchStr = ";$search".toByteArray(StandardCharsets.ISO_8859_1)
-            }
+            val semicolon = if (text == null) { "" } else { ";" }
+            searchStr =  (semicolon + search).toByteArray(StandardCharsets.ISO_8859_1)
         }
         if (outputStream.size() + searchStr.size <= API_CALLBACK_LENGTH_LIMIT) {
             outputStream.write(searchStr)

@@ -7,5 +7,4 @@ data class TrackItem (
     val available: Boolean,
     val durationMs: Int,
     val albums: List<Album>,
-    val artists: List<Artist>
-    )
+    val artists: List<Artist>)

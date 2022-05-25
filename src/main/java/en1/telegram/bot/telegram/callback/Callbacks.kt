@@ -1,4 +1,4 @@
-package en1.telegram.fit_to_gpx_bot.telegram.callback.dto
+package en1.telegram.bot.telegram.callback.dto
 
 /**
  * Possible callback types for music search
@@ -14,15 +14,6 @@ data class TrackCallback(
     val trackId: Int,
     val artistId: Int,
     val searchString: String): Callback()
-
-/**
- * Artist button was clicked
- * */
-data class ArtistCallback(
-    val artistId: Int,
-    val name: String,
-    val searchString: String
-) : Callback()
 
 /**
  * Page number was clicked for search string tracks

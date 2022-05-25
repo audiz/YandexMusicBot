@@ -1,18 +1,20 @@
-package en1.telegram.fit_to_gpx_bot.telegram
+package en1.telegram.bot.telegram
 
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import en1.telegram.fit_to_gpx_bot.telegram.callback.CallbackTypes
-import en1.telegram.fit_to_gpx_bot.telegram.callback.dto.*
-import en1.telegram.fit_to_gpx_bot.telegram.commands.service.HelpCommand
-import en1.telegram.fit_to_gpx_bot.telegram.music.CallbackMusicActions
-import en1.telegram.fit_to_gpx_bot.telegram.nonCommand.NonCommand
-import en1.telegram.fit_to_gpx_bot.telegram.service.FitToGpxConverter
+import en1.telegram.bot.telegram.callback.CallbackTypes
+import en1.telegram.bot.telegram.callback.dto.*
+import en1.telegram.bot.telegram.commands.service.HelpCommand
+import en1.telegram.bot.telegram.commands.service.StartCommand
+import en1.telegram.bot.telegram.music.CallbackMusicActions
+import en1.telegram.bot.telegram.nonCommand.NonCommand
+import en1.telegram.bot.telegram.service.FitToGpxConverter
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import org.telegram.telegrambots.extensions.bots.commandbot.TelegramLongPollingCommandBot
 import org.telegram.telegrambots.meta.api.methods.GetFile
 import org.telegram.telegrambots.meta.api.methods.send.SendDocument
+import org.telegram.telegrambots.meta.api.methods.send.SendMessage
 import org.telegram.telegrambots.meta.api.objects.File
 import org.telegram.telegrambots.meta.api.objects.InputFile
 import org.telegram.telegrambots.meta.api.objects.Message
@@ -22,6 +24,7 @@ import java.io.InputStream
 
 @Component
 class Bot(val fitToGpxConverter: FitToGpxConverter, val callbackTypes: CallbackTypes, val musicService: CallbackMusicActions): TelegramLongPollingCommandBot() {
+    private var allowedUsers: List<String> = listOf()
     private val logger = LoggerFactory.getLogger(Bot::class.java)
     private val botUsername: String
 
@@ -38,19 +41,26 @@ class Bot(val fitToGpxConverter: FitToGpxConverter, val callbackTypes: CallbackT
 
     /**
      * Ответ на запрос, не являющийся командой
-     */
+     * */
     override fun processNonCommandUpdate(update: Update) {
         if (update.hasCallbackQuery()) {
-            processCallback(update)
+            if (allowedUsers.contains(update.callbackQuery.from.id.toString())) {
+                processCallback(update)
+            } else {
+                sendCommandUnknown(update.callbackQuery.message.chatId.toString())
+            }
         } else {
             val msg: Message = update.message
             if (msg.hasDocument() && msg.document.fileName.lowercase().endsWith(".fit")) {
                 sendFitDoc(msg, update)
             } else {
-                execute(musicService.introMsg(msg))
+                if (allowedUsers.contains(msg.from.id.toString())) {
+                    execute(musicService.introMsg(msg))
+                } else {
+                    sendCommandUnknown(msg.chatId.toString())
+                }
             }
         }
-
     }
 
     /**
@@ -59,13 +69,11 @@ class Bot(val fitToGpxConverter: FitToGpxConverter, val callbackTypes: CallbackT
     private fun processCallback(update: Update) {
         when (val callback = callbackTypes.parseCallback(update.callbackQuery.data)) {
             is TrackCallback -> execute(musicService.document(update, callback))
-            is ArtistCallback -> execute(musicService.artistMsg(update, callback))
-            is SearchTrackWithPagesCallback -> execute(musicService.searchTrackWithPagesMsg(update, callback))
+            is SearchTrackWithPagesCallback -> execute(musicService.searchWithPagesMsg(update, callback))
             is ArtistTrackWithPagesCallback -> execute(musicService.artistWithPagesMsg(update, callback))
             is SimilarCallback -> execute(musicService.similarMsg(update, callback))
             else -> logger.warn("Unknown callback")
         }
-
     }
 
     /**
@@ -91,6 +99,20 @@ class Bot(val fitToGpxConverter: FitToGpxConverter, val callbackTypes: CallbackT
         }
     }
 
+    /**
+     * Send command is unknown
+     * */
+    private fun sendCommandUnknown(chatId: String) {
+        try {
+            val sendMessage = SendMessage()
+            sendMessage.chatId = chatId
+            sendMessage.text = "Unknown command, try /help"
+            execute(sendMessage)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
     companion object {
         private val mapper = jacksonObjectMapper()
         init {
@@ -101,13 +123,14 @@ class Bot(val fitToGpxConverter: FitToGpxConverter, val callbackTypes: CallbackT
     init {
         val getenv = System.getenv()
         logger.debug("Конструктор суперкласса отработал")
-        botUsername = getenv!!["BOT_NAME"]!!
+        this.botUsername = getenv!!["BOT_NAME"]!!
         this.botToken = getenv["BOT_TOKEN"]!!
+        this.allowedUsers = getenv["ALLOWED_USERS"]?.split(",") ?: listOf()
         logger.debug("Имя и токен присвоены")
         nonCommand = NonCommand()
-        logger.debug("Класс обработки сообщения, не являющегося командой, создан")
+
+        register(StartCommand("start", "Начало"))
         register(HelpCommand("help", "Помощь"))
-        logger.debug("Команда help создана")
         logger.info("Бот создан!")
     }
 }

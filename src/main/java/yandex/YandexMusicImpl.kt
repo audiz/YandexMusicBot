@@ -2,7 +2,6 @@ package yandex
 
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import en1.telegram.fit_to_gpx_bot.telegram.callback.CallbackTypesImpl
 import org.apache.http.client.methods.HttpGet
 import org.apache.http.impl.client.CloseableHttpClient
 import org.apache.http.impl.client.HttpClients

@@ -19,7 +19,7 @@
 		<kotlin.version>1.5.31</kotlin.version>
 		<apache.poi.version>4.1.2</apache.poi.version>
 		<telegram.version>5.0.1</telegram.version>
-		<spring.boot.mainclass>en1.telegram.fit_to_gpx_bot.FitToGpxBotApplicationKt</spring.boot.mainclass>
+		<spring.boot.mainclass>en1.telegram.bot.BotApplicationKt</spring.boot.mainclass>
 	</properties>
 
 	<dependencies>

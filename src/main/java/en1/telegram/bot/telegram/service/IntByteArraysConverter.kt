@@ -1,4 +1,4 @@
-package en1.telegram.fit_to_gpx_bot.telegram.service
+package en1.telegram.bot.telegram.service
 
 import java.io.*
 

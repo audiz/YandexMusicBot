@@ -1,4 +1,4 @@
-package en1.telegram.fit_to_gpx_bot.telegram.commands.service
+package en1.telegram.bot.telegram.commands.service
 
 import org.slf4j.LoggerFactory
 import org.telegram.telegrambots.extensions.bots.commandbot.commands.BotCommand
