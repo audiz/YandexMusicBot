@@ -183,6 +183,7 @@ class YandexMusicImpl: YandexMusic {
         if (jsonString.isEmpty()) {
             logger.warn("Failed to get storage for trackId = $trackId, artistId = $artistId")
         }
+        logger.info("jsonString = {}", jsonString)
 
         return mapper.readValue(jsonString, Storage::class.java)
     }
