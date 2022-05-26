@@ -64,7 +64,7 @@ class YandexMusicImpl: YandexMusic {
             val searchData = mapper.readValue(jsonString, SearchDTO::class.java)
             //println(searchData)
             return ResultOf.success(searchData)
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             return ResultOf.failure(failureMsg, ERROR_YANDEX_REQUEST_FAILED)
         }
     }
@@ -92,7 +92,7 @@ class YandexMusicImpl: YandexMusic {
             //println(searchData)
 
             return ResultOf.success(searchData)
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             return ResultOf.failure(failureMsg, ERROR_YANDEX_REQUEST_FAILED)
         }
     }
@@ -120,7 +120,7 @@ class YandexMusicImpl: YandexMusic {
             //println(searchData)
 
             return ResultOf.success(searchData)
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             return ResultOf.failure(failureMsg, ERROR_YANDEX_REQUEST_FAILED)
         }
     }
@@ -150,7 +150,7 @@ class YandexMusicImpl: YandexMusic {
             //println(artistData)
 
             return ResultOf.success(artistData)
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             return ResultOf.failure(failureMsg, ERROR_YANDEX_REQUEST_FAILED)
         }
 
@@ -229,7 +229,7 @@ class YandexMusicImpl: YandexMusic {
 
             val storageData = mapper.readValue(jsonString, Storage::class.java)
             return ResultOf.success(storageData)
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             return ResultOf.failure(failureMsg, ERROR_YANDEX_REQUEST_FAILED)
         }
     }
@@ -261,7 +261,7 @@ class YandexMusicImpl: YandexMusic {
 
             val xmlDownloadDTO = mapper.readValue(jsonPrettyPrintString, XmlDownload::class.java)
             return ResultOf.success(xmlDownloadDTO.downloadInfo)
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             return ResultOf.failure(failureMsg, ERROR_YANDEX_REQUEST_FAILED)
         }
     }
@@ -284,7 +284,7 @@ class YandexMusicImpl: YandexMusic {
             request.addHeader("Sec-Fetch-Site", "cross-site")
 
             return ResultOf.success(httpClient.execute(request).entity.content)
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             return ResultOf.failure(failureMsg, ERROR_YANDEX_REQUEST_FAILED)
         }
     }
