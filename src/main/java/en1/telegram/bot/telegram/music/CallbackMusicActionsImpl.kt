@@ -1,5 +1,6 @@
 package en1.telegram.bot.telegram.music
 
+import en1.common.ResultOf
 import en1.telegram.bot.telegram.callback.CallbackTypes
 import en1.telegram.bot.telegram.callback.dto.*
 import org.slf4j.LoggerFactory
@@ -33,11 +34,15 @@ class CallbackMusicActionsImpl(val yandexMusic: YandexMusic, val callbackTypes: 
     /**
      * Show search tracks to user
      * */
-    override fun introMsg(msg: Message): SendMessage {
+    override fun introMsg(msg: Message): ResultOf<SendMessage> {
 
         // TODO cut string to limit
         val searchText = URLEncoder.encode(msg.text.trimIndent(), "utf-8")
-        val search = yandexMusic.search(searchText)
+        val searchResult = yandexMusic.search(searchText)
+        if (searchResult is ResultOf.failure) {
+            return searchResult
+        }
+        val search = (searchResult as ResultOf.success).value
 
         val rowList: MutableList<List<InlineKeyboardButton>> = ArrayList()
 
@@ -53,17 +58,21 @@ class CallbackMusicActionsImpl(val yandexMusic: YandexMusic, val callbackTypes: 
         answer.chatId = msg.chatId.toString()
         answer.replyMarkup = inlineKeyboardMarkup
 
-        return answer
+        return ResultOf.success(answer)
     }
 
     /**
      * Pagination for artists tracks with similar artists.
      * Limit for json, when more than 150 we should request by ids
      * */
-    override fun artistWithPagesMsg(update: Update, callback: ArtistTrackWithPagesCallback): SendMessage {
+    override fun artistWithPagesMsg(update: Update, callback: ArtistTrackWithPagesCallback): ResultOf<SendMessage> {
         val page = callback.page
+        val searchResult = yandexMusic.searchTrack(callback.artistId)
+        if (searchResult is ResultOf.failure) {
+            return searchResult
+        }
+        val artistSearch = (searchResult as ResultOf.success).value
 
-        val artistSearch = yandexMusic.searchTrack(callback.artistId)
         val rowList: MutableList<List<InlineKeyboardButton>> = ArrayList()
 
         createTrackButtons(artistSearch.tracks.drop((page - 1) * TRACKS_PER_PAGE).take(TRACKS_PER_PAGE), rowList, callback.searchString, artistSearch.artist.name)
@@ -79,17 +88,23 @@ class CallbackMusicActionsImpl(val yandexMusic: YandexMusic, val callbackTypes: 
         answer.chatId = update.callbackQuery.message.chatId.toString()
         answer.replyMarkup = inlineKeyboardMarkup
 
-        return answer
+        return ResultOf.success(answer)
     }
 
     /**
      * Pagination for searched tracks
      * */
-    override fun searchWithPagesMsg(update: Update, callback: SearchTrackWithPagesCallback): SendMessage {
+    override fun searchWithPagesMsg(update: Update, callback: SearchTrackWithPagesCallback): ResultOf<SendMessage> {
         //logger.info("processPagerTrackSearch callback = {}", callback)
         val page = callback.page
         val realPageForRequest = ((page - 1) * TRACKS_PER_PAGE) / 100
-        val search = yandexMusic.searchTrack(callback.searchString, realPageForRequest)
+        val searchResult = yandexMusic.searchTrack(callback.searchString, realPageForRequest)
+        if (searchResult is ResultOf.failure) {
+            return searchResult
+        }
+        val search = (searchResult as ResultOf.success).value
+
+
         val rowList: MutableList<List<InlineKeyboardButton>> = ArrayList()
 
         val total = if (search.tracks.total > 200) 200 else search.tracks.total
@@ -105,14 +120,19 @@ class CallbackMusicActionsImpl(val yandexMusic: YandexMusic, val callbackTypes: 
         answer.chatId = update.callbackQuery.message.chatId.toString()
         answer.replyMarkup = inlineKeyboardMarkup
 
-        return answer
+        return ResultOf.success(answer)
     }
 
     /**
      * Show similar artists
      * */
-    override fun similarMsg(update: Update, callback: SimilarCallback): SendMessage {
-        val artistSearch = yandexMusic.getSimilar(callback.artistId)
+    override fun similarMsg(update: Update, callback: SimilarCallback): ResultOf<SendMessage> {
+        val searchResult = yandexMusic.getSimilar(callback.artistId)
+        if (searchResult is ResultOf.failure) {
+            return searchResult
+        }
+        val artistSearch = (searchResult as ResultOf.success).value
+
         val rowList: MutableList<List<InlineKeyboardButton>> = ArrayList()
 
         artistSearch.allSimilar.take(3 * ARTISTS_PER_PAGE).chunked(3).map { rowList.add(artistButtonsRow(it, "")) }
@@ -123,13 +143,13 @@ class CallbackMusicActionsImpl(val yandexMusic: YandexMusic, val callbackTypes: 
         answer.text = "Artists similar to ${artistSearch.artist.name}"
         answer.chatId = update.callbackQuery.message.chatId.toString()
         answer.replyMarkup = inlineKeyboardMarkup
-        return answer
+        return ResultOf.success(answer)
     }
 
     /**
      * Download track and send it to user
      * */
-    override fun document(update: Update, callback: TrackCallback): SendDocument {
+    override fun document(update: Update, callback: TrackCallback): ResultOf<SendDocument> {
         var songName = ""
         for (keyboard in update.callbackQuery.message.replyMarkup.keyboard) {
             for (inlineBtn in keyboard) {
@@ -141,13 +161,22 @@ class CallbackMusicActionsImpl(val yandexMusic: YandexMusic, val callbackTypes: 
         }
         songName = songName.substringBeforeLast(" (")
 
-        val storage = yandexMusic.findStorage(callback.trackId, callback.artistId)
-        val fileLocation = yandexMusic.findFileLocation(storage, callback.searchString)
-        val stream = yandexMusic.downloadFileAsStream(fileLocation, songName, callback.searchString)
+        val storageResult = yandexMusic.findStorage(callback.trackId, callback.artistId)
+        if (storageResult is ResultOf.failure) { return storageResult }
+        val storage = (storageResult as ResultOf.success).value
+
+        val fileLocationResult = yandexMusic.findFileLocation(storage, callback.searchString)
+        if (fileLocationResult is ResultOf.failure) { return fileLocationResult }
+        val fileLocation = (fileLocationResult as ResultOf.success).value
+
+        val streamResult = yandexMusic.downloadFileAsStream(fileLocation, songName, callback.searchString)
+        if (streamResult is ResultOf.failure) { return streamResult }
+        val stream = (streamResult as ResultOf.success).value
+
         val sendDocument = SendDocument()
         sendDocument.chatId = update.callbackQuery.message.chatId.toString()
         sendDocument.document = InputFile(stream, String.format("%s.mp3", songName))
-        return sendDocument
+        return ResultOf.success(sendDocument)
     }
 
     /**

@@ -2,6 +2,8 @@ package en1.telegram.bot.telegram
 
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import en1.common.ERROR_UNKNOWN_CALLBACK
+import en1.common.ResultOf
 import en1.telegram.bot.telegram.callback.CallbackTypes
 import en1.telegram.bot.telegram.callback.dto.*
 import en1.telegram.bot.telegram.commands.service.HelpCommand
@@ -55,7 +57,8 @@ class Bot(val fitToGpxConverter: FitToGpxConverter, val callbackTypes: CallbackT
                 sendFitDoc(msg, update)
             } else {
                 if (allowedUsers.contains(msg.from.id.toString())) {
-                    execute(musicService.introMsg(msg))
+                    val intro = musicService.introMsg(msg) as ResultOf.success
+                    execute(intro.value)
                 } else {
                     sendCommandUnknown(msg.chatId.toString())
                 }
@@ -67,13 +70,28 @@ class Bot(val fitToGpxConverter: FitToGpxConverter, val callbackTypes: CallbackT
      * Answer on different callback types for user
      * */
     private fun processCallback(update: Update) {
-        when (val callback = callbackTypes.parseCallback(update.callbackQuery.data)) {
-            is TrackCallback -> execute(musicService.document(update, callback))
-            is SearchTrackWithPagesCallback -> execute(musicService.searchWithPagesMsg(update, callback))
-            is ArtistTrackWithPagesCallback -> execute(musicService.artistWithPagesMsg(update, callback))
-            is SimilarCallback -> execute(musicService.similarMsg(update, callback))
-            else -> logger.warn("Unknown callback")
+
+        val callbackResult = when (val callback = callbackTypes.parseCallback(update.callbackQuery.data)) {
+            is TrackCallback -> musicService.document(update, callback)
+            is SearchTrackWithPagesCallback -> musicService.searchWithPagesMsg(update, callback)
+            is ArtistTrackWithPagesCallback -> musicService.artistWithPagesMsg(update, callback)
+            is SimilarCallback -> musicService.similarMsg(update, callback)
+            is UnknownCallback -> ResultOf.failure("None callback", ERROR_UNKNOWN_CALLBACK)
         }
+
+        when (callbackResult) {
+            is ResultOf.success -> {
+                when (callbackResult.value) {
+                    is SendMessage -> execute(callbackResult.value)
+                    is SendDocument -> execute(callbackResult.value)
+                 }
+            }
+            is ResultOf.failure -> {
+                logger.error("Failure msg = ${callbackResult.message}, code = ${callbackResult.code}")
+                sendCommandFailure(update.callbackQuery.message.chatId.toString(), "Bot failed with code '${callbackResult.code}'")
+            }
+        }
+
     }
 
     /**
@@ -107,6 +125,20 @@ class Bot(val fitToGpxConverter: FitToGpxConverter, val callbackTypes: CallbackT
             val sendMessage = SendMessage()
             sendMessage.chatId = chatId
             sendMessage.text = "Unknown command, try /help"
+            execute(sendMessage)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    /**
+     * Send command is failed
+     * */
+    private fun sendCommandFailure(chatId: String, failureMsg: String) {
+        try {
+            val sendMessage = SendMessage()
+            sendMessage.chatId = chatId
+            sendMessage.text = failureMsg
             execute(sendMessage)
         } catch (e: Exception) {
             e.printStackTrace()

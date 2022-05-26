@@ -38,3 +38,5 @@ data class ArtistTrackWithPagesCallback(
 data class SimilarCallback(
     val artistId: Int
 ) : Callback()
+
+object UnknownCallback: Callbacks

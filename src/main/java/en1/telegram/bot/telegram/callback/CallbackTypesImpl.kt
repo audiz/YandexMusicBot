@@ -39,7 +39,7 @@ class CallbackTypesImpl : CallbackTypes {
     /**
      * Create callback object type from [callback] string
      * */
-    override fun parseCallback(callback: String): Callbacks? {
+    override fun parseCallback(callback: String): Callbacks {
         //val callbackId = callback.substringBefore(";")
         val bytesCoded = callback.toByteArray(Charsets.ISO_8859_1)
         val callbackId = bytesCoded[0]
@@ -64,7 +64,7 @@ class CallbackTypesImpl : CallbackTypes {
         }
         else {
             logger.info("Unknown callback = {}", callback)
-            return null
+            return UnknownCallback
         }
     }
 

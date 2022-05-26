@@ -16,7 +16,7 @@ interface CallbackTypes {
     /**
      * Parse [callback] string to object
      * */
-    fun parseCallback(callback: String): Callbacks?
+    fun parseCallback(callback: String): Callbacks
     /**
      * Parse [callback] for needed [clazz] type
      * */
