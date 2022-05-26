@@ -180,7 +180,7 @@ class YandexMusicImpl: YandexMusic {
             //println(artistData)
 
             return ResultOf.success(artistData)
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             return ResultOf.failure(failureMsg, ERROR_YANDEX_REQUEST_FAILED)
         }
 
