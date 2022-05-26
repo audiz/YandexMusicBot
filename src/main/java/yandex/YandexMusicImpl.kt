@@ -3,6 +3,7 @@ package yandex
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import en1.common.ERROR_MSG_IN_YANDEX_JSON
+import en1.common.ERROR_YANDEX_CAPTCHA_REQUIRED
 import en1.common.ERROR_YANDEX_REQUEST_FAILED
 import en1.common.ResultOf
 import org.apache.http.client.methods.HttpGet
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Component
 import yandex.dto.ArtistSearchDTO
 import yandex.dto.SearchDTO
 import yandex.dto.TrackSearchDTO
+import yandex.dto.CaptchaDTO
 import yandex.dto.download.DownloadInfo
 import yandex.dto.download.Storage
 import yandex.dto.download.XmlDownload
@@ -175,6 +177,13 @@ class YandexMusicImpl: YandexMusic {
             val entity = response.entity
             val jsonString = EntityUtils.toString(entity)
             failureMsg += ", jsonString = $jsonString, statusCode = ${response.statusLine.statusCode}"
+
+            // can be captcha type
+            if (jsonString.contains("\"type\": \"captcha\"")) {
+                val captcha = mapper.readValue(jsonString, CaptchaDTO::class.java)
+                logger.info("captcha = {}", captcha)
+                return ResultOf.failure(failureMsg, ERROR_YANDEX_CAPTCHA_REQUIRED)
+            }
 
             val artistData = mapper.readValue(jsonString, ArtistSearchDTO::class.java)
             //println(artistData)
