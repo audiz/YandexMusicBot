@@ -152,7 +152,6 @@ class YandexMusicImpl: YandexMusic {
         } catch (e: Throwable) {
             return ResultOf.failure(failureMsg, ERROR_YANDEX_REQUEST_FAILED)
         }
-
     }
 
     override fun getSimilar(artistId: Int): ResultOf<ArtistSearchDTO> {
@@ -181,7 +180,7 @@ class YandexMusicImpl: YandexMusic {
             if (jsonString.contains("\"type\": \"captcha\"")) {
                 val captcha = mapper.readValue(jsonString, CaptchaDTO::class.java)
                 logger.info("captcha = {}", captcha)
-                return ResultOf.failure(failureMsg, ERROR_YANDEX_CAPTCHA_REQUIRED)
+                return ResultOf.captcha(captcha.captcha, null)
             }
 
             val artistData = mapper.readValue(jsonString, ArtistSearchDTO::class.java)

@@ -51,13 +51,21 @@ class Bot(val fitToGpxConverter: FitToGpxConverter, val musicService: CallbackMu
                 sendCommandUnknown(update.callbackQuery.message.chatId.toString())
             }
         } else {
-            val msg: Message = update.message
+            val msg: Message = update.message ?: update.editedMessage
+            val userId = msg.from.id
+
             if (msg.hasDocument() && msg.document.fileName.lowercase().endsWith(".fit")) {
                 sendFitDoc(msg, update)
             } else {
-                if (allowedUsers.contains(msg.from.id.toString())) {
-                    val intro = musicService.introMsg(msg) as ResultOf.success
-                    execute(intro.value)
+                if (allowedUsers.contains(userId.toString())) {
+                    if (captchaMap.contains(userId)) {
+                        // processCallback
+                        logger.info("Process captcha msg = {}", msg.text)
+                        captchaMap.remove(userId)
+                    } else {
+                        val intro = musicService.introMsg(msg) as ResultOf.success
+                        execute(intro.value)
+                    }
                 } else {
                     sendCommandUnknown(msg.chatId.toString())
                 }
@@ -65,16 +73,20 @@ class Bot(val fitToGpxConverter: FitToGpxConverter, val musicService: CallbackMu
         }
     }
 
+    val captchaMap = HashMap<Int, ResultOf.captcha>()
+
     /**
      * Answer on different callback types for user
      * */
     private fun processCallback(update: Update) {
+        val fromId = update.callbackQuery.from.id
+        val chatId = update.callbackQuery.message.chatId.toString()
 
         val callbackResult = when (val callback = update.callbackQuery.data.decodeCallback()) {
             is TrackCallback -> musicService.document(update, callback)
-            is SearchTrackWithPagesCallback -> musicService.searchWithPagesMsg(update, callback)
-            is ArtistTrackWithPagesCallback -> musicService.artistWithPagesMsg(update, callback)
-            is SimilarCallback -> musicService.similarMsg(update, callback)
+            is SearchTrackWithPagesCallback -> musicService.searchWithPagesMsg(chatId, callback)
+            is ArtistTrackWithPagesCallback -> musicService.artistWithPagesMsg(chatId, callback)
+            is SimilarCallback -> musicService.similarMsg(chatId, callback)
             is UnknownCallback -> ResultOf.failure("None callback", ERROR_UNKNOWN_CALLBACK)
         }
 
@@ -85,12 +97,30 @@ class Bot(val fitToGpxConverter: FitToGpxConverter, val musicService: CallbackMu
                     is SendDocument -> execute(callbackResult.value)
                  }
             }
+            is ResultOf.captcha -> {
+                sendCaptcha(fromId, chatId, callbackResult)
+            }
             is ResultOf.failure -> {
                 logger.error("Failure msg = ${callbackResult.message}, code = ${callbackResult.code}")
-                sendCommandFailure(update.callbackQuery.message.chatId.toString(), "Bot failed with code '${callbackResult.code}'")
+                sendCommandFailure(chatId, "Bot failed with code '${callbackResult.code}'")
             }
         }
+    }
 
+    /**
+     * Send command is unknown
+     * */
+    private fun sendCaptcha(userId: Int, chatId: String, captcha: ResultOf.captcha) {
+        try {
+            captchaMap[userId] = captcha
+
+            val sendMessage = SendMessage()
+            sendMessage.chatId = chatId
+            sendMessage.text = "Captcha img path = ${captcha.capthca.imgUrl}"
+            execute(sendMessage)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     /**

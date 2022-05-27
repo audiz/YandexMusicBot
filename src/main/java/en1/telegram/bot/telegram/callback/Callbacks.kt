@@ -11,35 +11,8 @@ private const val API_CALLBACK_LENGTH_LIMIT = 62
  * */
 sealed interface Callbacks
 
-sealed class Callback(): Callbacks {
+sealed class Callback : Callbacks {
     abstract fun encode(): String
-}
-
-fun String.decodeCallback() : Callbacks {
-    val bytesCoded = this.toByteArray(Charsets.ISO_8859_1)
-    val callbackId = bytesCoded[0]
-    val intSize = bytesCoded[1]
-    val intBytes = bytesCoded.copyOfRange(2, intSize.toInt() + 2)
-    val intArr = IntByteArraysConverter.convert(intBytes)
-    val rawString = String(bytesCoded.copyOfRange(intSize.toInt() + 2, bytesCoded.size), Charsets.ISO_8859_1)
-    val textData = rawString.substringBeforeLast(";")
-    val searchString = rawString.substringAfterLast(";")
-
-    return when (callbackId) {
-        TrackCallback.identifier -> TrackCallback(intArr[0], intArr[1], searchString)
-        SearchTrackWithPagesCallback.identifier -> SearchTrackWithPagesCallback(intArr[0], searchString)
-        ArtistTrackWithPagesCallback.identifier -> ArtistTrackWithPagesCallback(intArr[0], intArr[1], searchString)
-        SimilarCallback.identifier -> SimilarCallback(intArr[0])
-        else -> UnknownCallback
-    }
-}
-
-fun <T> String.decodeCallback(clazz: Class<T>): T? {
-    val obj = this.decodeCallback()
-    if (obj::class.java == clazz) {
-        return obj as T
-    }
-    return null
 }
 
 /**
@@ -131,4 +104,31 @@ fun generateStringFromData(callbackId: Byte, intArray: IntArray?, text: String?,
 
     val data = outputStream.toByteArray()
     return String(data, Charsets.ISO_8859_1)
+}
+
+fun String.decodeCallback() : Callbacks {
+    val bytesCoded = this.toByteArray(Charsets.ISO_8859_1)
+    val callbackId = bytesCoded[0]
+    val intSize = bytesCoded[1]
+    val intBytes = bytesCoded.copyOfRange(2, intSize.toInt() + 2)
+    val intArr = IntByteArraysConverter.convert(intBytes)
+    val rawString = String(bytesCoded.copyOfRange(intSize.toInt() + 2, bytesCoded.size), Charsets.ISO_8859_1)
+    val textData = rawString.substringBeforeLast(";")
+    val searchString = rawString.substringAfterLast(";")
+
+    return when (callbackId) {
+        TrackCallback.identifier -> TrackCallback(intArr[0], intArr[1], searchString)
+        SearchTrackWithPagesCallback.identifier -> SearchTrackWithPagesCallback(intArr[0], searchString)
+        ArtistTrackWithPagesCallback.identifier -> ArtistTrackWithPagesCallback(intArr[0], intArr[1], searchString)
+        SimilarCallback.identifier -> SimilarCallback(intArr[0])
+        else -> UnknownCallback
+    }
+}
+
+fun <T> String.decodeCallback(clazz: Class<T>): T? {
+    val obj = this.decodeCallback()
+    if (obj::class.java == clazz) {
+        return obj as T
+    }
+    return null
 }

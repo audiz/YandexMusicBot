@@ -21,15 +21,15 @@ interface CallbackMusicActions {
     /**
      * Show artist tracks to the user
      * */
-    fun artistWithPagesMsg(update: Update, callback: ArtistTrackWithPagesCallback): ResultOf<SendMessage>
+    fun artistWithPagesMsg(chatId: String, callback: ArtistTrackWithPagesCallback): ResultOf<SendMessage>
     /**
      * Show search information with pagination and handle page numbers
      * */
-    fun searchWithPagesMsg(update: Update, callback: SearchTrackWithPagesCallback): ResultOf<SendMessage>
+    fun searchWithPagesMsg(chatId: String, callback: SearchTrackWithPagesCallback): ResultOf<SendMessage>
     /**
      * Show similar artists
      * */
-    fun similarMsg(update: Update, callback: SimilarCallback): ResultOf<SendMessage>
+    fun similarMsg(chatId: String, callback: SimilarCallback): ResultOf<SendMessage>
     /**
      * Send mp3 track to user
      * */

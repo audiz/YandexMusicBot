@@ -64,7 +64,7 @@ class CallbackMusicActionsImpl(val yandexMusic: YandexMusic) : CallbackMusicActi
      * Pagination for artists tracks with similar artists.
      * Limit for json, when more than 150 we should request by ids
      * */
-    override fun artistWithPagesMsg(update: Update, callback: ArtistTrackWithPagesCallback): ResultOf<SendMessage> {
+    override fun artistWithPagesMsg(chatId: String, callback: ArtistTrackWithPagesCallback): ResultOf<SendMessage> {
         val page = callback.page
         val searchResult = yandexMusic.searchTrack(callback.artistId)
         if (searchResult is ResultOf.failure) {
@@ -77,14 +77,16 @@ class CallbackMusicActionsImpl(val yandexMusic: YandexMusic) : CallbackMusicActi
         createTrackButtons(artistSearch.tracks.drop((page - 1) * TRACKS_PER_PAGE).take(TRACKS_PER_PAGE), rowList, callback.searchString, artistSearch.artist.name)
         rowList.add(pagesButtonsRow(artistSearch.tracks.size, page, callback.searchString, callback.artistId))
         rowList.add(artistButtonsRow(artistSearch.similar.take(3), callback.searchString))
-        rowList.add(artistButtonShowMoreRow(callback.artistId))
+        if (artistSearch.similar.isNotEmpty()) {
+            rowList.add(artistButtonShowMoreRow(callback.artistId))
+        }
 
         val inlineKeyboardMarkup = InlineKeyboardMarkup()
         inlineKeyboardMarkup.keyboard = rowList
 
         val answer = SendMessage()
         answer.text = "Artist page: $page (${(page * TRACKS_PER_PAGE)} of ${artistSearch.tracks.size} tracks)"
-        answer.chatId = update.callbackQuery.message.chatId.toString()
+        answer.chatId = chatId
         answer.replyMarkup = inlineKeyboardMarkup
 
         return ResultOf.success(answer)
@@ -93,7 +95,7 @@ class CallbackMusicActionsImpl(val yandexMusic: YandexMusic) : CallbackMusicActi
     /**
      * Pagination for searched tracks
      * */
-    override fun searchWithPagesMsg(update: Update, callback: SearchTrackWithPagesCallback): ResultOf<SendMessage> {
+    override fun searchWithPagesMsg(chatId: String, callback: SearchTrackWithPagesCallback): ResultOf<SendMessage> {
         //logger.info("processPagerTrackSearch callback = {}", callback)
         val page = callback.page
         val realPageForRequest = ((page - 1) * TRACKS_PER_PAGE) / 100
@@ -116,7 +118,7 @@ class CallbackMusicActionsImpl(val yandexMusic: YandexMusic) : CallbackMusicActi
 
         val answer = SendMessage()
         answer.text = "Search page: $page (${(page * TRACKS_PER_PAGE)} of ${search.tracks.total} tracks)"
-        answer.chatId = update.callbackQuery.message.chatId.toString()
+        answer.chatId = chatId
         answer.replyMarkup = inlineKeyboardMarkup
 
         return ResultOf.success(answer)
@@ -125,11 +127,17 @@ class CallbackMusicActionsImpl(val yandexMusic: YandexMusic) : CallbackMusicActi
     /**
      * Show similar artists
      * */
-    override fun similarMsg(update: Update, callback: SimilarCallback): ResultOf<SendMessage> {
+    override fun similarMsg(chatId: String, callback: SimilarCallback): ResultOf<SendMessage> {
         val searchResult = yandexMusic.getSimilar(callback.artistId)
         if (searchResult is ResultOf.failure) {
             return searchResult
         }
+        if (searchResult is ResultOf.captcha) {
+            // If captcha sow it and return back to this
+            searchResult.callback = callback
+            return searchResult
+        }
+
         val artistSearch = (searchResult as ResultOf.success).value
 
         val rowList: MutableList<List<InlineKeyboardButton>> = ArrayList()
@@ -138,9 +146,10 @@ class CallbackMusicActionsImpl(val yandexMusic: YandexMusic) : CallbackMusicActi
 
         val inlineKeyboardMarkup = InlineKeyboardMarkup()
         inlineKeyboardMarkup.keyboard = rowList
+
         val answer = SendMessage()
         answer.text = "Artists similar to ${artistSearch.artist.name}"
-        answer.chatId = update.callbackQuery.message.chatId.toString()
+        answer.chatId = chatId
         answer.replyMarkup = inlineKeyboardMarkup
         return ResultOf.success(answer)
     }
