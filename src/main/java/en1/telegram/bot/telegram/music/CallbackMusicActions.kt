@@ -1,7 +1,10 @@
 package en1.telegram.bot.telegram.music
 
 import en1.common.ResultOf
-import en1.telegram.bot.telegram.callback.dto.*
+import en1.telegram.bot.telegram.callback.ArtistTrackWithPagesCallback
+import en1.telegram.bot.telegram.callback.SearchTrackWithPagesCallback
+import en1.telegram.bot.telegram.callback.SimilarCallback
+import en1.telegram.bot.telegram.callback.TrackCallback
 import org.telegram.telegrambots.meta.api.methods.send.SendDocument
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage
 import org.telegram.telegrambots.meta.api.objects.Message

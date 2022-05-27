@@ -4,8 +4,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import en1.common.ERROR_UNKNOWN_CALLBACK
 import en1.common.ResultOf
-import en1.telegram.bot.telegram.callback.CallbackTypes
-import en1.telegram.bot.telegram.callback.dto.*
+import en1.telegram.bot.telegram.callback.*
 import en1.telegram.bot.telegram.commands.service.HelpCommand
 import en1.telegram.bot.telegram.commands.service.StartCommand
 import en1.telegram.bot.telegram.music.CallbackMusicActions
@@ -25,7 +24,7 @@ import java.io.InputStream
 
 
 @Component
-class Bot(val fitToGpxConverter: FitToGpxConverter, val callbackTypes: CallbackTypes, val musicService: CallbackMusicActions): TelegramLongPollingCommandBot() {
+class Bot(val fitToGpxConverter: FitToGpxConverter, val musicService: CallbackMusicActions): TelegramLongPollingCommandBot() {
     private var allowedUsers: List<String> = listOf()
     private val logger = LoggerFactory.getLogger(Bot::class.java)
     private val botUsername: String
@@ -71,7 +70,7 @@ class Bot(val fitToGpxConverter: FitToGpxConverter, val callbackTypes: CallbackT
      * */
     private fun processCallback(update: Update) {
 
-        val callbackResult = when (val callback = callbackTypes.parseCallback(update.callbackQuery.data)) {
+        val callbackResult = when (val callback = update.callbackQuery.data.decodeCallback()) {
             is TrackCallback -> musicService.document(update, callback)
             is SearchTrackWithPagesCallback -> musicService.searchWithPagesMsg(update, callback)
             is ArtistTrackWithPagesCallback -> musicService.artistWithPagesMsg(update, callback)

@@ -1,8 +1,7 @@
 package en1.telegram.bot.telegram.music
 
 import en1.common.ResultOf
-import en1.telegram.bot.telegram.callback.CallbackTypes
-import en1.telegram.bot.telegram.callback.dto.*
+import en1.telegram.bot.telegram.callback.*
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import org.telegram.telegrambots.meta.api.methods.send.SendDocument
@@ -26,7 +25,7 @@ private const val API_BUTTONS_ROW_LIMIT = 8
  * Handler for callback user actions
  * */
 @Component
-class CallbackMusicActionsImpl(val yandexMusic: YandexMusic, val callbackTypes: CallbackTypes) : CallbackMusicActions {
+class CallbackMusicActionsImpl(val yandexMusic: YandexMusic) : CallbackMusicActions {
     companion object {
         private val logger = LoggerFactory.getLogger(CallbackMusicActionsImpl::class.java)
     }
@@ -153,7 +152,7 @@ class CallbackMusicActionsImpl(val yandexMusic: YandexMusic, val callbackTypes: 
         var songName = ""
         for (keyboard in update.callbackQuery.message.replyMarkup.keyboard) {
             for (inlineBtn in keyboard) {
-                if (callbackTypes.parseCallback(inlineBtn.callbackData, TrackCallback::class.java)?.trackId == callback.trackId) {
+                if (inlineBtn.callbackData.decodeCallback(TrackCallback::class.java)?.trackId == callback.trackId) {
                     songName = inlineBtn.text
                     break
                 }
@@ -195,7 +194,7 @@ class CallbackMusicActionsImpl(val yandexMusic: YandexMusic, val callbackTypes: 
                 ?.let { "${track.title} - $it" } ?: track.title
 
             inlineKeyboardButton1.text = "$trackName $duration"
-            inlineKeyboardButton1.callbackData = callbackTypes.trackCallback(track.id, track.albums[0].id, searchText)
+            inlineKeyboardButton1.callbackData = TrackCallback(track.id, track.albums[0].id, searchText).encode()
             val keyboardButtonsRow1: MutableList<InlineKeyboardButton> = ArrayList()
             keyboardButtonsRow1.add(inlineKeyboardButton1)
             rowList.add(keyboardButtonsRow1)
@@ -209,7 +208,7 @@ class CallbackMusicActionsImpl(val yandexMusic: YandexMusic, val callbackTypes: 
         val artistsButtonsRow: MutableList<InlineKeyboardButton> = ArrayList()
         val inlineArtistButton = InlineKeyboardButton()
         inlineArtistButton.text = "Show more similar artists..."
-        inlineArtistButton.callbackData = callbackTypes.similarCallback(artistId)
+        inlineArtistButton.callbackData = SimilarCallback(artistId).encode()
         artistsButtonsRow.add(inlineArtistButton)
         return artistsButtonsRow
     }
@@ -222,7 +221,7 @@ class CallbackMusicActionsImpl(val yandexMusic: YandexMusic, val callbackTypes: 
         items.map {
             val inlineArtistButton = InlineKeyboardButton()
             inlineArtistButton.text = it.name
-            inlineArtistButton.callbackData = callbackTypes.artistTracksWithPagesCallback(1, it.id, searchText)
+            inlineArtistButton.callbackData = ArtistTrackWithPagesCallback(1, it.id, searchText).encode()
             artistsButtonsRow.add(inlineArtistButton)
         }
         return artistsButtonsRow
@@ -241,9 +240,9 @@ class CallbackMusicActionsImpl(val yandexMusic: YandexMusic, val callbackTypes: 
             val inlinePageButton = InlineKeyboardButton()
             inlinePageButton.text = if (i == current) "*$i*" else i.toString()
             if (artistId != null) {
-                inlinePageButton.callbackData = callbackTypes.artistTracksWithPagesCallback(i, artistId, searchText)
+                inlinePageButton.callbackData = ArtistTrackWithPagesCallback(i, artistId, searchText).encode()
             } else {
-                inlinePageButton.callbackData = callbackTypes.searchTracksWithPagesCallback(i, searchText)
+                inlinePageButton.callbackData = SearchTrackWithPagesCallback(i, searchText).encode()
             }
             pagesButtonsRow.add(inlinePageButton)
         }
