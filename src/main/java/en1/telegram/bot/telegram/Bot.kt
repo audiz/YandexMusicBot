@@ -123,7 +123,7 @@ class Bot(val fitToGpxConverter: FitToGpxConverter, val musicService: CallbackMu
     private fun sendCaptcha(userId: Int, chatId: String, captcha: ResultOf.Captcha) {
         try {
             captchaService.put(userId, captcha)
-            logger.info("captchaService.containsKey(userId)  = {}", captchaService.containsKey(userId))
+            logger.info("captchaService.containsKey(userId) = {}", captchaService.containsKey(userId))
 
             val sendMessage = SendMessage()
             sendMessage.chatId = chatId
