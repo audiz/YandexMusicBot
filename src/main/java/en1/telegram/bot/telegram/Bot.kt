@@ -73,8 +73,12 @@ class Bot(val fitToGpxConverter: FitToGpxConverter, val musicService: CallbackMu
                         processCallback(result.callback!!, userId, chatId)
                         //captchaService.remove(userId)
                     } else {
-                        val intro = musicService.introMsg(msg) as ResultOf.Success
-                        execute(intro.value)
+                        val result = musicService.introMsg(msg)
+                        when (result) {
+                            is ResultOf.Success -> execute(result.value)
+                            is ResultOf.Failure -> sendCommandFailure(chatId, "Failure ${result.code}")
+                            is ResultOf.Captcha -> sendCommandFailure(chatId, "Failure captcha")
+                        }
                     }
                 } else {
                     sendCommandUnknown(chatId)
