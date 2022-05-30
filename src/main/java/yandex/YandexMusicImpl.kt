@@ -21,6 +21,7 @@ import yandex.dto.download.DownloadInfo
 import yandex.dto.download.Storage
 import yandex.dto.download.XmlDownload
 import java.io.InputStream
+import java.net.URLDecoder
 import java.net.URLEncoder
 
 @Component("yandexParserInterface")
@@ -156,15 +157,19 @@ class YandexMusicImpl: YandexMusic {
     override fun getSimilar(artistId: Int, captcha: ResultOf.Captcha?): ResultOf<ArtistSearchDTO> {
         var failureMsg = ""
         try {
-            failureMsg = "Request to /artist.jsx?artist=$artistId&what=similar"
+
             val request: HttpGet
             if (captcha != null) {
                 val captchaKey = captcha.captcha.key.urlEncode()
                 val retpath = captcha.captcha.captchaPage.substringAfter("retpath=").substringBefore("&")
                 val u = captcha.captcha.captchaPage.substringAfter("u=").substringBefore("&")
                 val answer = captcha.captchaAnswer!!.urlEncode()
+                failureMsg = "Request retpath = ${retpath.urlDecode()}"
+
                 request = HttpGet("https://music.yandex.ru/checkcaptcha?key=${captchaKey}&retpath=${retpath}&u=${u}&rep=$answer")
             } else {
+                failureMsg = "Request to /artist.jsx?artist=$artistId&what=similar"
+
                 request = HttpGet("https://music.yandex.ru/handlers/artist.jsx?artist=$artistId&what=similar&sort=&dir=&period=&lang=ru&external-domain=")
                 request.addHeader("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:99.0) Gecko/20100101 Firefox/99.0")
                 request.addHeader("Accept", "application/json, text/javascript, */*; q=0.01")
@@ -183,7 +188,7 @@ class YandexMusicImpl: YandexMusic {
             val response = httpClient.execute(request)
             val entity = response.entity
             val jsonString = EntityUtils.toString(entity)
-            failureMsg += ", jsonString = $jsonString, statusCode = ${response.statusLine.statusCode}"
+            failureMsg += ", statusCode = ${response.statusLine.statusCode}, jsonString = $jsonString"
 
             // can be captcha type
             if (jsonString.contains("\"type\": \"captcha\"")) {
@@ -311,6 +316,7 @@ class YandexMusicImpl: YandexMusic {
     }
 
     fun String.urlEncode(): String = URLEncoder.encode(this, java.nio.charset.StandardCharsets.UTF_8.toString())
+    fun String.urlDecode(): String = URLDecoder.decode(this, java.nio.charset.StandardCharsets.UTF_8.toString())
 }
 
 /**
