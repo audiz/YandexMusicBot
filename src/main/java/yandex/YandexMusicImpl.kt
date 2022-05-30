@@ -3,7 +3,6 @@ package yandex
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import en1.common.ERROR_MSG_IN_YANDEX_JSON
-import en1.common.ERROR_YANDEX_CAPTCHA_REQUIRED
 import en1.common.ERROR_YANDEX_REQUEST_FAILED
 import en1.common.ResultOf
 import org.apache.http.client.methods.HttpGet
@@ -64,9 +63,9 @@ class YandexMusicImpl: YandexMusic {
 
             val searchData = mapper.readValue(jsonString, SearchDTO::class.java)
             //println(searchData)
-            return ResultOf.success(searchData)
+            return ResultOf.Success(searchData)
         } catch (e: Throwable) {
-            return ResultOf.failure(failureMsg, ERROR_YANDEX_REQUEST_FAILED)
+            return ResultOf.Failure(failureMsg, ERROR_YANDEX_REQUEST_FAILED)
         }
     }
 
@@ -92,9 +91,9 @@ class YandexMusicImpl: YandexMusic {
             val searchData = mapper.readValue(jsonString, TrackSearchDTO::class.java)
             //println(searchData)
 
-            return ResultOf.success(searchData)
+            return ResultOf.Success(searchData)
         } catch (e: Throwable) {
-            return ResultOf.failure(failureMsg, ERROR_YANDEX_REQUEST_FAILED)
+            return ResultOf.Failure(failureMsg, ERROR_YANDEX_REQUEST_FAILED)
         }
     }
 
@@ -120,9 +119,9 @@ class YandexMusicImpl: YandexMusic {
             val searchData = mapper.readValue(jsonString, ArtistSearchDTO::class.java)
             //println(searchData)
 
-            return ResultOf.success(searchData)
+            return ResultOf.Success(searchData)
         } catch (e: Throwable) {
-            return ResultOf.failure(failureMsg, ERROR_YANDEX_REQUEST_FAILED)
+            return ResultOf.Failure(failureMsg, ERROR_YANDEX_REQUEST_FAILED)
         }
     }
 
@@ -148,28 +147,38 @@ class YandexMusicImpl: YandexMusic {
             val artistData = mapper.readValue(jsonString, ArtistSearchDTO::class.java)
             //println(artistData)
 
-            return ResultOf.success(artistData)
+            return ResultOf.Success(artistData)
         } catch (e: Throwable) {
-            return ResultOf.failure(failureMsg, ERROR_YANDEX_REQUEST_FAILED)
+            return ResultOf.Failure(failureMsg, ERROR_YANDEX_REQUEST_FAILED)
         }
     }
 
-    override fun getSimilar(artistId: Int): ResultOf<ArtistSearchDTO> {
+    override fun getSimilar(artistId: Int, captcha: ResultOf.Captcha?): ResultOf<ArtistSearchDTO> {
         var failureMsg = ""
         try {
             failureMsg = "Request to /artist.jsx?artist=$artistId&what=similar"
-            val request = HttpGet("https://music.yandex.ru/handlers/artist.jsx?artist=$artistId&what=similar&sort=&dir=&period=&lang=ru&external-domain=")
-            request.addHeader("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:99.0) Gecko/20100101 Firefox/99.0")
-            request.addHeader("Accept", "application/json, text/javascript, */*; q=0.01")
-            request.addHeader("Accept-Language", "en-US,en;q=0.5")
-            request.addHeader("Referer", "https://music.yandex.ru/artist/$artistId/similar")
-            //request.addHeader("X-Current-UID", "23858391")
-            request.addHeader("X-Retpath-Y", "https://music.yandex.ru/artist/$artistId/similar")
-            request.addHeader("X-Requested-With", "XMLHttpRequest")
-            request.addHeader("Connection", "keep-alive")
-            request.addHeader("Sec-Fetch-Dest", "empty")
-            request.addHeader("Sec-Fetch-Mode", "cors")
-            request.addHeader("Sec-Fetch-Site", "same-origin")
+            val request: HttpGet
+            if (captcha != null) {
+                val captchaKey = captcha.captcha.key.urlEncode()
+                val retpath = captcha.captcha.captchaPage.substringAfter("retpath=").substringBefore("&")
+                val u = captcha.captcha.captchaPage.substringAfter("u=").substringBefore("&")
+                val answer = captcha.captchaAnswer!!.urlEncode()
+                request = HttpGet("https://music.yandex.ru/checkcaptcha?key=${captchaKey}&retpath=${retpath}&u=${u}&rep=$answer")
+            } else {
+                request = HttpGet("https://music.yandex.ru/handlers/artist.jsx?artist=$artistId&what=similar&sort=&dir=&period=&lang=ru&external-domain=")
+                request.addHeader("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:99.0) Gecko/20100101 Firefox/99.0")
+                request.addHeader("Accept", "application/json, text/javascript, */*; q=0.01")
+                request.addHeader("Accept-Language", "en-US,en;q=0.5")
+                request.addHeader("Referer", "https://music.yandex.ru/artist/$artistId/similar")
+                //request.addHeader("X-Current-UID", "23858391")
+                request.addHeader("X-Retpath-Y", "https://music.yandex.ru/artist/$artistId/similar")
+                request.addHeader("X-Requested-With", "XMLHttpRequest")
+                request.addHeader("Connection", "keep-alive")
+                request.addHeader("Sec-Fetch-Dest", "empty")
+                request.addHeader("Sec-Fetch-Mode", "cors")
+                request.addHeader("Sec-Fetch-Site", "same-origin")
+            }
+
 
             val response = httpClient.execute(request)
             val entity = response.entity
@@ -180,15 +189,15 @@ class YandexMusicImpl: YandexMusic {
             if (jsonString.contains("\"type\": \"captcha\"")) {
                 val captcha = mapper.readValue(jsonString, CaptchaDTO::class.java)
                 logger.info("captcha = {}", captcha)
-                return ResultOf.captcha(captcha.captcha, null)
+                return ResultOf.Captcha(captcha.captcha, null)
             }
 
             val artistData = mapper.readValue(jsonString, ArtistSearchDTO::class.java)
             //println(artistData)
 
-            return ResultOf.success(artistData)
+            return ResultOf.Success(artistData)
         } catch (e: Throwable) {
-            return ResultOf.failure(failureMsg, ERROR_YANDEX_REQUEST_FAILED)
+            return ResultOf.Failure(failureMsg, ERROR_YANDEX_REQUEST_FAILED)
         }
     }
 
@@ -221,13 +230,13 @@ class YandexMusicImpl: YandexMusic {
             if (jsonString.isEmpty() || "{\"error\":\"HTTP-ERROR\"}" == jsonString) {
                 logger.warn("Failed to get storage for trackId = $trackId, artistId = $artistId, jsonString = {}", jsonString)
                 failureMsg += ", jsonString = $jsonString, statusCode = ${response.statusLine.statusCode}"
-                return ResultOf.failure(failureMsg, ERROR_MSG_IN_YANDEX_JSON)
+                return ResultOf.Failure(failureMsg, ERROR_MSG_IN_YANDEX_JSON)
             }
 
             val storageData = mapper.readValue(jsonString, Storage::class.java)
-            return ResultOf.success(storageData)
+            return ResultOf.Success(storageData)
         } catch (e: Throwable) {
-            return ResultOf.failure(failureMsg, ERROR_YANDEX_REQUEST_FAILED)
+            return ResultOf.Failure(failureMsg, ERROR_YANDEX_REQUEST_FAILED)
         }
     }
 
@@ -257,9 +266,9 @@ class YandexMusicImpl: YandexMusic {
             val jsonPrettyPrintString = xmlJSONObj.toString(0)
 
             val xmlDownloadDTO = mapper.readValue(jsonPrettyPrintString, XmlDownload::class.java)
-            return ResultOf.success(xmlDownloadDTO.downloadInfo)
+            return ResultOf.Success(xmlDownloadDTO.downloadInfo)
         } catch (e: Throwable) {
-            return ResultOf.failure(failureMsg, ERROR_YANDEX_REQUEST_FAILED)
+            return ResultOf.Failure(failureMsg, ERROR_YANDEX_REQUEST_FAILED)
         }
     }
 
@@ -280,9 +289,9 @@ class YandexMusicImpl: YandexMusic {
             request.addHeader("Sec-Fetch-Mode", "cors")
             request.addHeader("Sec-Fetch-Site", "cross-site")
 
-            return ResultOf.success(httpClient.execute(request).entity.content)
+            return ResultOf.Success(httpClient.execute(request).entity.content)
         } catch (e: Throwable) {
-            return ResultOf.failure(failureMsg, ERROR_YANDEX_REQUEST_FAILED)
+            return ResultOf.Failure(failureMsg, ERROR_YANDEX_REQUEST_FAILED)
         }
     }
 

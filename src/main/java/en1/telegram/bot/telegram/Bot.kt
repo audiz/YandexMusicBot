@@ -9,6 +9,7 @@ import en1.telegram.bot.telegram.commands.service.HelpCommand
 import en1.telegram.bot.telegram.commands.service.StartCommand
 import en1.telegram.bot.telegram.music.CallbackMusicActions
 import en1.telegram.bot.telegram.nonCommand.NonCommand
+import en1.telegram.bot.telegram.service.CaptchaService
 import en1.telegram.bot.telegram.service.FitToGpxConverter
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -20,11 +21,12 @@ import org.telegram.telegrambots.meta.api.objects.File
 import org.telegram.telegrambots.meta.api.objects.InputFile
 import org.telegram.telegrambots.meta.api.objects.Message
 import org.telegram.telegrambots.meta.api.objects.Update
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton
 import java.io.InputStream
 
 
 @Component
-class Bot(val fitToGpxConverter: FitToGpxConverter, val musicService: CallbackMusicActions): TelegramLongPollingCommandBot() {
+class Bot(val fitToGpxConverter: FitToGpxConverter, val musicService: CallbackMusicActions, val captchaService: CaptchaService): TelegramLongPollingCommandBot() {
     private var allowedUsers: List<String> = listOf()
     private val logger = LoggerFactory.getLogger(Bot::class.java)
     private val botUsername: String
@@ -45,62 +47,67 @@ class Bot(val fitToGpxConverter: FitToGpxConverter, val musicService: CallbackMu
      * */
     override fun processNonCommandUpdate(update: Update) {
         if (update.hasCallbackQuery()) {
-            if (allowedUsers.contains(update.callbackQuery.from.id.toString())) {
-                processCallback(update)
+            val userId = update.callbackQuery.from.id
+            val chatId = update.callbackQuery.message.chatId.toString()
+            val callback = update.callbackQuery.data.decodeCallback()
+            val keyboardList = update.callbackQuery.message.replyMarkup.keyboard
+            if (allowedUsers.contains(userId.toString())) {
+                processCallback(callback, userId, chatId, keyboardList)
             } else {
-                sendCommandUnknown(update.callbackQuery.message.chatId.toString())
+                sendCommandUnknown(chatId)
             }
         } else {
             val msg: Message = update.message ?: update.editedMessage
             val userId = msg.from.id
+            val chatId = msg.chatId.toString()
 
             if (msg.hasDocument() && msg.document.fileName.lowercase().endsWith(".fit")) {
                 sendFitDoc(msg, update)
             } else {
                 if (allowedUsers.contains(userId.toString())) {
-                    if (captchaMap.contains(userId)) {
+                    if (captchaService.contains(userId)) {
                         // processCallback
                         logger.info("Process captcha msg = {}", msg.text)
-                        captchaMap.remove(userId)
+                        val result = captchaService.get(userId)
+                        result.captchaAnswer = msg.text
+                        processCallback(result.callback!!, userId, chatId)
+                        //captchaService.remove(userId)
                     } else {
-                        val intro = musicService.introMsg(msg) as ResultOf.success
+                        val intro = musicService.introMsg(msg) as ResultOf.Success
                         execute(intro.value)
                     }
                 } else {
-                    sendCommandUnknown(msg.chatId.toString())
+                    sendCommandUnknown(chatId)
                 }
             }
         }
     }
 
-    val captchaMap = HashMap<Int, ResultOf.captcha>()
 
     /**
      * Answer on different callback types for user
      * */
-    private fun processCallback(update: Update) {
-        val fromId = update.callbackQuery.from.id
-        val chatId = update.callbackQuery.message.chatId.toString()
+    private fun processCallback(callback: Callbacks, userId: Int, chatId: String, keyboardList: List<List<InlineKeyboardButton>>? = null) {
 
-        val callbackResult = when (val callback = update.callbackQuery.data.decodeCallback()) {
-            is TrackCallback -> musicService.document(update, callback)
-            is SearchTrackWithPagesCallback -> musicService.searchWithPagesMsg(chatId, callback)
-            is ArtistTrackWithPagesCallback -> musicService.artistWithPagesMsg(chatId, callback)
-            is SimilarCallback -> musicService.similarMsg(chatId, callback)
-            is UnknownCallback -> ResultOf.failure("None callback", ERROR_UNKNOWN_CALLBACK)
+        val callbackResult = when (callback) {
+            is TrackCallback -> musicService.document(userId, chatId, callback, keyboardList!!)
+            is SearchTrackWithPagesCallback -> musicService.searchWithPagesMsg(userId, chatId, callback)
+            is ArtistTrackWithPagesCallback -> musicService.artistWithPagesMsg(userId, chatId, callback)
+            is SimilarCallback -> musicService.similarMsg(userId, chatId, callback)
+            is UnknownCallback -> ResultOf.Failure("None callback", ERROR_UNKNOWN_CALLBACK)
         }
 
         when (callbackResult) {
-            is ResultOf.success -> {
+            is ResultOf.Success -> {
                 when (callbackResult.value) {
                     is SendMessage -> execute(callbackResult.value)
                     is SendDocument -> execute(callbackResult.value)
                  }
             }
-            is ResultOf.captcha -> {
-                sendCaptcha(fromId, chatId, callbackResult)
+            is ResultOf.Captcha -> {
+                sendCaptcha(userId, chatId, callbackResult)
             }
-            is ResultOf.failure -> {
+            is ResultOf.Failure -> {
                 logger.error("Failure msg = ${callbackResult.message}, code = ${callbackResult.code}")
                 sendCommandFailure(chatId, "Bot failed with code '${callbackResult.code}'")
             }
@@ -110,13 +117,12 @@ class Bot(val fitToGpxConverter: FitToGpxConverter, val musicService: CallbackMu
     /**
      * Send command is unknown
      * */
-    private fun sendCaptcha(userId: Int, chatId: String, captcha: ResultOf.captcha) {
+    private fun sendCaptcha(userId: Int, chatId: String, captcha: ResultOf.Captcha) {
         try {
-            captchaMap[userId] = captcha
-
+            captchaService.put(userId, captcha)
             val sendMessage = SendMessage()
             sendMessage.chatId = chatId
-            sendMessage.text = "Captcha img path = ${captcha.capthca.imgUrl}"
+            sendMessage.text = "Captcha img path = ${captcha.captcha.imgUrl}"
             execute(sendMessage)
         } catch (e: Exception) {
             e.printStackTrace()

@@ -13,7 +13,7 @@ interface YandexMusic {
     fun searchTrack(search: String, page: Int = 0): ResultOf<TrackSearchDTO>
     fun searchTrack(artistId: Int): ResultOf<ArtistSearchDTO>
     fun getArtist(id: Int): ResultOf<ArtistSearchDTO>
-    fun getSimilar(artistId: Int): ResultOf<ArtistSearchDTO>
+    fun getSimilar(artistId: Int, captcha: ResultOf.Captcha? = null): ResultOf<ArtistSearchDTO>
     fun findStorage(trackId: Int, artistId: Int): ResultOf<Storage>
     fun findFileLocation(storageDTO: Storage, search: String): ResultOf<DownloadInfo>
     fun downloadFileAsStream(downloadInfo: DownloadInfo, songName: String, search: String): ResultOf<InputStream>

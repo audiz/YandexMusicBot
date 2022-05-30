@@ -9,6 +9,7 @@ import org.telegram.telegrambots.meta.api.methods.send.SendDocument
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage
 import org.telegram.telegrambots.meta.api.objects.Message
 import org.telegram.telegrambots.meta.api.objects.Update
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton
 
 /**
  * Actions for users callbacks from telegram
@@ -21,17 +22,17 @@ interface CallbackMusicActions {
     /**
      * Show artist tracks to the user
      * */
-    fun artistWithPagesMsg(chatId: String, callback: ArtistTrackWithPagesCallback): ResultOf<SendMessage>
+    fun artistWithPagesMsg(userId: Int, chatId: String, callback: ArtistTrackWithPagesCallback): ResultOf<SendMessage>
     /**
      * Show search information with pagination and handle page numbers
      * */
-    fun searchWithPagesMsg(chatId: String, callback: SearchTrackWithPagesCallback): ResultOf<SendMessage>
+    fun searchWithPagesMsg(userId: Int,chatId: String, callback: SearchTrackWithPagesCallback): ResultOf<SendMessage>
     /**
      * Show similar artists
      * */
-    fun similarMsg(chatId: String, callback: SimilarCallback): ResultOf<SendMessage>
+    fun similarMsg(userId: Int,chatId: String, callback: SimilarCallback): ResultOf<SendMessage>
     /**
      * Send mp3 track to user
      * */
-    fun document(update: Update, callback: TrackCallback): ResultOf<SendDocument>
+    fun document(userId: Int,chatId: String, callback: TrackCallback, keyboardList: List<List<InlineKeyboardButton>>): ResultOf<SendDocument>
 }
