@@ -12,8 +12,8 @@ class CaptchaServiceImpl : CaptchaService {
         captchaMap[userId] = captcha
     }
 
-    override fun contains(userId: Int): Boolean {
-        return captchaMap.contains(userId)
+    override fun containsKey(userId: Int): Boolean {
+        return captchaMap.containsKey(userId)
     }
 
     override fun remove(userId: Int) {

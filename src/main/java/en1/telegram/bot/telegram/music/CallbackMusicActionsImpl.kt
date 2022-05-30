@@ -131,7 +131,7 @@ class CallbackMusicActionsImpl(val yandexMusic: YandexMusic, val captchaService:
     override fun similarMsg(userId: Int, chatId: String, callback: SimilarCallback): ResultOf<SendMessage> {
 
         val searchResult: ResultOf<ArtistSearchDTO>
-        if (captchaService.contains(userId)) {
+        if (captchaService.containsKey(userId)) {
             val result = captchaService.get(userId)
             searchResult = yandexMusic.getSimilar(callback.artistId, result)
             captchaService.remove(userId)

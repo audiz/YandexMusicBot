@@ -65,7 +65,7 @@ class Bot(val fitToGpxConverter: FitToGpxConverter, val musicService: CallbackMu
                 sendFitDoc(msg, update)
             } else {
                 if (allowedUsers.contains(userId.toString())) {
-                    if (captchaService.contains(userId)) {
+                    if (captchaService.containsKey(userId)) {
                         // processCallback
                         logger.info("Process captcha msg = {}", msg.text)
                         val result = captchaService.get(userId)
@@ -123,7 +123,7 @@ class Bot(val fitToGpxConverter: FitToGpxConverter, val musicService: CallbackMu
     private fun sendCaptcha(userId: Int, chatId: String, captcha: ResultOf.Captcha) {
         try {
             captchaService.put(userId, captcha)
-            logger.info("captchaService.contains(userId) = {}", captchaService.contains(userId))
+            logger.info("captchaService.containsKey(userId) = {}", captchaService.containsKey(userId))
 
             val sendMessage = SendMessage()
             sendMessage.chatId = chatId
