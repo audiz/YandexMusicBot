@@ -65,19 +65,19 @@ class Bot(val fitToGpxConverter: FitToGpxConverter, val musicService: CallbackMu
                 sendFitDoc(msg, update)
             } else {
                 if (allowedUsers.contains(userId.toString())) {
-                    if (captchaService.containsKey(userId)) {
-                        // processCallback
+                    val result = if (captchaService.containsKey(userId)) {
                         logger.info("Process captcha msg = {}", msg.text)
-                        val result = captchaService.get(userId)
-                        result.captchaAnswer = msg.text
-                        processCallback(result.callback!!, userId, chatId)
-                        //captchaService.remove(userId)
+                        val captchaResult = captchaService.get(userId)
+                        captchaService.remove(userId)
+                        musicService.answerCaptcha(chatId, msg.text, captchaResult)
                     } else {
-                        when (val result = musicService.introMsg(msg)) {
-                            is ResultOf.Success -> execute(result.value)
-                            is ResultOf.Failure -> sendCommandFailure(chatId, "Failure ${result.code}")
-                            is ResultOf.Captcha -> sendCommandFailure(chatId, "Failure captcha")
-                        }
+                        musicService.introMsg(msg)
+                    }
+                    // Show answer to user
+                    when (result) {
+                        is ResultOf.Success -> execute(result.value)
+                        is ResultOf.Failure -> sendCommandFailure(chatId, "Failure ${result.code}")
+                        is ResultOf.Captcha -> sendCommandFailure(chatId, "Failure captcha")
                     }
                 } else {
                     sendCommandUnknown(chatId)
@@ -101,15 +101,11 @@ class Bot(val fitToGpxConverter: FitToGpxConverter, val musicService: CallbackMu
         }
 
         when (callbackResult) {
-            is ResultOf.Success -> {
-                when (callbackResult.value) {
-                    is SendMessage -> execute(callbackResult.value)
-                    is SendDocument -> execute(callbackResult.value)
-                 }
+            is ResultOf.Success -> when (callbackResult.value) {
+                is SendMessage -> execute(callbackResult.value)
+                is SendDocument -> execute(callbackResult.value)
             }
-            is ResultOf.Captcha -> {
-                sendCaptcha(userId, chatId, callbackResult)
-            }
+            is ResultOf.Captcha -> showCaptcha(userId, chatId, callbackResult)
             is ResultOf.Failure -> {
                 logger.error("Failure msg = ${callbackResult.message}, code = ${callbackResult.code}")
                 sendCommandFailure(chatId, "Bot failed with code '${callbackResult.code}'")
@@ -120,7 +116,7 @@ class Bot(val fitToGpxConverter: FitToGpxConverter, val musicService: CallbackMu
     /**
      * Send command is unknown
      * */
-    private fun sendCaptcha(userId: Int, chatId: String, captcha: ResultOf.Captcha) {
+    private fun showCaptcha(userId: Int, chatId: String, captcha: ResultOf.Captcha) {
         try {
             captchaService.put(userId, captcha)
             logger.info("captchaService.containsKey(userId) = {}", captchaService.containsKey(userId))

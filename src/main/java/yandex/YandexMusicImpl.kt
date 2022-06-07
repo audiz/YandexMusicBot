@@ -24,8 +24,15 @@ import java.io.InputStream
 import java.net.URLDecoder
 import java.net.URLEncoder
 
-@Component("yandexParserInterface")
+@Component
 class YandexMusicImpl: YandexMusic {
+
+    private val yandexCookie: String?
+
+    init {
+        val getenv = System.getenv()
+        yandexCookie = getenv!!["YANDEX_COOKIE"]
+    }
 
     companion object {
         private val logger = LoggerFactory.getLogger(YandexMusicImpl::class.java)
@@ -34,13 +41,6 @@ class YandexMusicImpl: YandexMusic {
         init {
             mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
         }
-    }
-
-    private val yandexCookie: String?
-
-    init {
-        val getenv = System.getenv()
-        yandexCookie = getenv!!["YANDEX_COOKIE"]
     }
 
     override fun search(search: String): ResultOf<SearchDTO> {
@@ -154,35 +154,36 @@ class YandexMusicImpl: YandexMusic {
         }
     }
 
-    override fun getSimilar(artistId: Int, captcha: ResultOf.Captcha?): ResultOf<ArtistSearchDTO> {
+    override fun answerCaptcha(answer: String, captcha: ResultOf.Captcha): Boolean {
+        val captchaKey = captcha.captcha.key.urlEncode()
+        val retpath = captcha.captcha.captchaPage.substringAfter("retpath=").substringBefore("&")
+        val u = captcha.captcha.captchaPage.substringAfter("u=").substringBefore("&")
+        val request = HttpGet("https://music.yandex.ru/checkcaptcha?key=${captchaKey}&retpath=${retpath}&u=${u}&rep=${answer.urlEncode()}")
+
+        val response = httpClient.execute(request)
+        val answerString = EntityUtils.toString(response.entity)
+
+        logger.info("statusCode = {}, answerString = {}", response.statusLine.statusCode, answerString)
+        return true
+    }
+
+    override fun getSimilar(artistId: Int): ResultOf<ArtistSearchDTO> {
         var failureMsg = ""
         try {
+            failureMsg = "Request to /artist.jsx?artist=$artistId&what=similar"
 
-            val request: HttpGet
-            if (captcha != null) {
-                val captchaKey = captcha.captcha.key.urlEncode()
-                val retpath = captcha.captcha.captchaPage.substringAfter("retpath=").substringBefore("&")
-                val u = captcha.captcha.captchaPage.substringAfter("u=").substringBefore("&")
-                val answer = captcha.captchaAnswer!!.urlEncode()
-                failureMsg = "Request retpath = ${retpath.urlDecode()}"
-
-                request = HttpGet("https://music.yandex.ru/checkcaptcha?key=${captchaKey}&retpath=${retpath}&u=${u}&rep=$answer")
-            } else {
-                failureMsg = "Request to /artist.jsx?artist=$artistId&what=similar"
-
-                request = HttpGet("https://music.yandex.ru/handlers/artist.jsx?artist=$artistId&what=similar&sort=&dir=&period=&lang=ru&external-domain=")
-                request.addHeader("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:99.0) Gecko/20100101 Firefox/99.0")
-                request.addHeader("Accept", "application/json, text/javascript, */*; q=0.01")
-                request.addHeader("Accept-Language", "en-US,en;q=0.5")
-                request.addHeader("Referer", "https://music.yandex.ru/artist/$artistId/similar")
-                //request.addHeader("X-Current-UID", "23858391")
-                request.addHeader("X-Retpath-Y", "https://music.yandex.ru/artist/$artistId/similar")
-                request.addHeader("X-Requested-With", "XMLHttpRequest")
-                request.addHeader("Connection", "keep-alive")
-                request.addHeader("Sec-Fetch-Dest", "empty")
-                request.addHeader("Sec-Fetch-Mode", "cors")
-                request.addHeader("Sec-Fetch-Site", "same-origin")
-            }
+            val request = HttpGet("https://music.yandex.ru/handlers/artist.jsx?artist=$artistId&what=similar")
+            request.addHeader("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:99.0) Gecko/20100101 Firefox/99.0")
+            request.addHeader("Accept", "application/json, text/javascript, */*; q=0.01")
+            request.addHeader("Accept-Language", "en-US,en;q=0.5")
+            request.addHeader("Referer", "https://music.yandex.ru/artist/$artistId/similar")
+            //request.addHeader("X-Current-UID", "23858391")
+            request.addHeader("X-Retpath-Y", "https://music.yandex.ru/artist/$artistId/similar")
+            request.addHeader("X-Requested-With", "XMLHttpRequest")
+            request.addHeader("Connection", "keep-alive")
+            request.addHeader("Sec-Fetch-Dest", "empty")
+            request.addHeader("Sec-Fetch-Mode", "cors")
+            request.addHeader("Sec-Fetch-Site", "same-origin")
 
 
             val response = httpClient.execute(request)
@@ -194,7 +195,7 @@ class YandexMusicImpl: YandexMusic {
             if (jsonString.contains("\"type\": \"captcha\"")) {
                 val captcha = mapper.readValue(jsonString, CaptchaDTO::class.java)
                 logger.info("captcha = {}", captcha)
-                return ResultOf.Captcha(captcha.captcha, null)
+                return ResultOf.Captcha(captcha.captcha)
             }
 
             val artistData = mapper.readValue(jsonString, ArtistSearchDTO::class.java)
@@ -232,9 +233,10 @@ class YandexMusicImpl: YandexMusic {
             val entity = response.entity
             val jsonString = EntityUtils.toString(entity)
 
+            failureMsg += ", statusCode = ${response.statusLine.statusCode}, jsonString = $jsonString"
+
             if (jsonString.isEmpty() || "{\"error\":\"HTTP-ERROR\"}" == jsonString) {
-                logger.warn("Failed to get storage for trackId = $trackId, artistId = $artistId, jsonString = {}", jsonString)
-                failureMsg += ", jsonString = $jsonString, statusCode = ${response.statusLine.statusCode}"
+                logger.warn("Failed to get storage for trackId = {}, artistId = {}, jsonString = {}", trackId, artistId, jsonString)
                 return ResultOf.Failure(failureMsg, ERROR_MSG_IN_YANDEX_JSON)
             }
 
@@ -320,7 +322,7 @@ class YandexMusicImpl: YandexMusic {
 }
 
 /**
- * https://zennolab.com/discussion/threads/ne-peredaet-kapchu-cherez-get-v-jandeks-500r.71479/
+ * Captcha info https://zennolab.com/discussion/threads/ne-peredaet-kapchu-cherez-get-v-jandeks-500r.71479/
 1. https://yandex.ru/search/?text=Nokian%20Tyres%20Hakkapeliitta%20R3%20SUV&lr=213
 
 2. https://yandex.ru/showcaptcha?retpath=https%3A//yandex.ru/search%3Ftext%3DNokian%2520Tyres%2520Hakkapeliitta%2520R3%2520SUV%26lr%3D213_588b7ac2ffec570ccaf34175752f8292&t=0/1577600475/4aeb08da4d0bf27fbf0c95652d753e12&s=37ecff107c0311563d5edc81f917a296

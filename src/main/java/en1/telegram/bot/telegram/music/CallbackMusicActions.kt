@@ -35,4 +35,8 @@ interface CallbackMusicActions {
      * Send mp3 track to user
      * */
     fun document(userId: Int,chatId: String, callback: TrackCallback, keyboardList: List<List<InlineKeyboardButton>>): ResultOf<SendDocument>
+    /**
+     * Answer captcha
+     * */
+    fun answerCaptcha(chatId: String, answer: String, captcha: ResultOf.Captcha): ResultOf<SendMessage>
 }

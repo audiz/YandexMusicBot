@@ -12,7 +12,6 @@ import org.telegram.telegrambots.meta.api.objects.Message
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton
 import yandex.YandexMusic
-import yandex.dto.ArtistSearchDTO
 import yandex.dto.domain.ArtistItem
 import yandex.dto.domain.TrackItem
 import java.net.URLEncoder
@@ -35,7 +34,6 @@ class CallbackMusicActionsImpl(val yandexMusic: YandexMusic, val captchaService:
      * Show search tracks to user
      * */
     override fun introMsg(msg: Message): ResultOf<SendMessage> {
-
         // TODO cut string to limit
         val searchText = URLEncoder.encode(msg.text.trimIndent(), "utf-8")
         val searchResult = yandexMusic.search(searchText)
@@ -43,7 +41,6 @@ class CallbackMusicActionsImpl(val yandexMusic: YandexMusic, val captchaService:
             return searchResult
         }
         val search = (searchResult as ResultOf.Success).value
-
         val rowList: MutableList<List<InlineKeyboardButton>> = ArrayList()
 
         createTrackButtons(search.tracks.items, rowList, searchText)
@@ -72,7 +69,6 @@ class CallbackMusicActionsImpl(val yandexMusic: YandexMusic, val captchaService:
             return searchResult
         }
         val artistSearch = (searchResult as ResultOf.Success).value
-
         val rowList: MutableList<List<InlineKeyboardButton>> = ArrayList()
 
         createTrackButtons(artistSearch.tracks.drop((page - 1) * TRACKS_PER_PAGE).take(TRACKS_PER_PAGE), rowList, callback.searchString, artistSearch.artist.name)
@@ -104,11 +100,9 @@ class CallbackMusicActionsImpl(val yandexMusic: YandexMusic, val captchaService:
         if (searchResult is ResultOf.Failure) {
             return searchResult
         }
+
         val search = (searchResult as ResultOf.Success).value
-
-
         val rowList: MutableList<List<InlineKeyboardButton>> = ArrayList()
-
         val total = if (search.tracks.total > 200) 200 else search.tracks.total
 
         createTrackButtons(search.tracks.items.drop(((page - 1) % TRACKS_PER_PAGE) * TRACKS_PER_PAGE).take(TRACKS_PER_PAGE), rowList, callback.searchString)
@@ -129,29 +123,13 @@ class CallbackMusicActionsImpl(val yandexMusic: YandexMusic, val captchaService:
      * Show similar artists
      * */
     override fun similarMsg(userId: Int, chatId: String, callback: SimilarCallback): ResultOf<SendMessage> {
-
-        val searchResult: ResultOf<ArtistSearchDTO>
-        if (captchaService.containsKey(userId)) {
-            val result = captchaService.get(userId)
-            searchResult = yandexMusic.getSimilar(callback.artistId, result)
-            captchaService.remove(userId)
-        } else {
-            searchResult = yandexMusic.getSimilar(callback.artistId)
-        }
-
+        val searchResult = yandexMusic.getSimilar(callback.artistId)
         if (searchResult is ResultOf.Failure) {
-            return searchResult
-        }
-        if (searchResult is ResultOf.Captcha) {
-            // If captcha showed, then solve and callback here
-            searchResult.callback = callback
             return searchResult
         }
 
         val artistSearch = (searchResult as ResultOf.Success).value
-
         val rowList: MutableList<List<InlineKeyboardButton>> = ArrayList()
-
         artistSearch.allSimilar.take(3 * ARTISTS_PER_PAGE).chunked(3).map { rowList.add(artistButtonsRow(it, "")) }
 
         val inlineKeyboardMarkup = InlineKeyboardMarkup()
@@ -195,6 +173,17 @@ class CallbackMusicActionsImpl(val yandexMusic: YandexMusic, val captchaService:
         sendDocument.chatId = chatId
         sendDocument.document = InputFile(stream, String.format("%s.mp3", songName))
         return ResultOf.Success(sendDocument)
+    }
+
+    /**
+     * Send [answer] for [captcha] to yandex and return result
+     * */
+    override fun answerCaptcha(chatId: String, answer: String, captcha: ResultOf.Captcha): ResultOf<SendMessage> {
+        val captchaResult = yandexMusic.answerCaptcha(answer, captcha)
+        val sendMessage = SendMessage()
+        sendMessage.text = "Captcha result is $captchaResult"
+        sendMessage.chatId = chatId
+        return ResultOf.Success(sendMessage)
     }
 
     /**
