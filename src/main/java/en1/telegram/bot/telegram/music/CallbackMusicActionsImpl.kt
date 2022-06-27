@@ -2,13 +2,11 @@ package en1.telegram.bot.telegram.music
 
 import en1.common.ResultOf
 import en1.telegram.bot.telegram.callback.*
-import en1.telegram.bot.telegram.service.CaptchaService
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import org.telegram.telegrambots.meta.api.methods.send.SendDocument
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage
 import org.telegram.telegrambots.meta.api.objects.InputFile
-import org.telegram.telegrambots.meta.api.objects.Message
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton
 import yandex.YandexMusic
@@ -25,7 +23,7 @@ private const val API_BUTTONS_ROW_LIMIT = 8
  * Handler for callback user actions
  * */
 @Component
-class CallbackMusicActionsImpl(val yandexMusic: YandexMusic, val captchaService: CaptchaService) : CallbackMusicActions {
+class CallbackMusicActionsImpl(val yandexMusic: YandexMusic) : CallbackMusicActions {
     companion object {
         private val logger = LoggerFactory.getLogger(CallbackMusicActionsImpl::class.java)
     }
@@ -33,13 +31,12 @@ class CallbackMusicActionsImpl(val yandexMusic: YandexMusic, val captchaService:
     /**
      * Show search tracks to user
      * */
-    override fun introMsg(msg: Message): ResultOf<SendMessage> {
+    override fun searchByString(chatId: String, text: String): ResultOf<SendMessage> {
         // TODO cut string to limit
-        val searchText = URLEncoder.encode(msg.text.trimIndent(), "utf-8")
+        val searchText = URLEncoder.encode(text.trimIndent(), "utf-8")
         val searchResult = yandexMusic.search(searchText)
-        if (searchResult is ResultOf.Failure) {
-            return searchResult
-        }
+        searchResult.returnNok { return it }
+
         val search = (searchResult as ResultOf.Success).value
         val rowList: MutableList<List<InlineKeyboardButton>> = ArrayList()
 
@@ -52,7 +49,7 @@ class CallbackMusicActionsImpl(val yandexMusic: YandexMusic, val captchaService:
 
         val answer = SendMessage()
         answer.text = "Tracks found for request: ${search.tracks.total}"
-        answer.chatId = msg.chatId.toString()
+        answer.chatId = chatId
         answer.replyMarkup = inlineKeyboardMarkup
 
         return ResultOf.Success(answer)
@@ -65,9 +62,8 @@ class CallbackMusicActionsImpl(val yandexMusic: YandexMusic, val captchaService:
     override fun artistWithPagesMsg(userId: Int, chatId: String, callback: ArtistTrackWithPagesCallback): ResultOf<SendMessage> {
         val page = callback.page
         val searchResult = yandexMusic.searchTrack(callback.artistId)
-        if (searchResult is ResultOf.Failure) {
-            return searchResult
-        }
+        searchResult.returnNok { return it }
+
         val artistSearch = (searchResult as ResultOf.Success).value
         val rowList: MutableList<List<InlineKeyboardButton>> = ArrayList()
 
@@ -93,13 +89,11 @@ class CallbackMusicActionsImpl(val yandexMusic: YandexMusic, val captchaService:
      * Pagination for searched tracks
      * */
     override fun searchWithPagesMsg(userId: Int, chatId: String, callback: SearchTrackWithPagesCallback): ResultOf<SendMessage> {
-        //logger.info("processPagerTrackSearch callback = {}", callback)
+        //logger.info("searchWithPagesMsg callback = {}", callback)
         val page = callback.page
         val realPageForRequest = ((page - 1) * TRACKS_PER_PAGE) / 100
         val searchResult = yandexMusic.searchTrack(callback.searchString, realPageForRequest)
-        if (searchResult is ResultOf.Failure) {
-            return searchResult
-        }
+        searchResult.returnNok { return it }
 
         val search = (searchResult as ResultOf.Success).value
         val rowList: MutableList<List<InlineKeyboardButton>> = ArrayList()
@@ -124,9 +118,7 @@ class CallbackMusicActionsImpl(val yandexMusic: YandexMusic, val captchaService:
      * */
     override fun similarMsg(userId: Int, chatId: String, callback: SimilarCallback): ResultOf<SendMessage> {
         val searchResult = yandexMusic.getSimilar(callback.artistId)
-        if (searchResult is ResultOf.Failure) {
-            return searchResult
-        }
+        searchResult.returnNok { return it }
 
         val artistSearch = (searchResult as ResultOf.Success).value
         val rowList: MutableList<List<InlineKeyboardButton>> = ArrayList()
@@ -279,6 +271,18 @@ class CallbackMusicActionsImpl(val yandexMusic: YandexMusic, val captchaService:
             }
         }
         return Pair(left, right)
+    }
+
+    /**
+     * Tun [block] to return non success result instantly
+     * */
+    private inline fun <reified T> ResultOf<T>.returnNok(block: (ResultOf<Nothing>) -> Unit) {
+        if (this is ResultOf.Failure) {
+            return block(this)
+        }
+        if (this is ResultOf.Captcha) {
+            return block(this)
+        }
     }
 
 }

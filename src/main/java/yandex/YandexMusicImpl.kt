@@ -62,6 +62,12 @@ class YandexMusicImpl: YandexMusic {
             val jsonString = EntityUtils.toString(entity)
             failureMsg += ", jsonString = $jsonString, statusCode = ${response.statusLine.statusCode}"
 
+            if (jsonString.contains("\"type\": \"captcha\"")) {
+                val captcha = mapper.readValue(jsonString, CaptchaDTO::class.java)
+                logger.info("captcha = {}", captcha)
+                return ResultOf.Captcha(captcha.captcha)
+            }
+
             val searchData = mapper.readValue(jsonString, SearchDTO::class.java)
             //println(searchData)
             return ResultOf.Success(searchData)
@@ -89,9 +95,14 @@ class YandexMusicImpl: YandexMusic {
             val jsonString = EntityUtils.toString(entity)
             failureMsg += ", jsonString = $jsonString, statusCode = ${response.statusLine.statusCode}"
 
+            if (jsonString.contains("\"type\": \"captcha\"")) {
+                val captcha = mapper.readValue(jsonString, CaptchaDTO::class.java)
+                logger.info("captcha = {}", captcha)
+                return ResultOf.Captcha(captcha.captcha)
+            }
+
             val searchData = mapper.readValue(jsonString, TrackSearchDTO::class.java)
             //println(searchData)
-
             return ResultOf.Success(searchData)
         } catch (e: Throwable) {
             return ResultOf.Failure(failureMsg, ERROR_YANDEX_REQUEST_FAILED)
@@ -116,6 +127,12 @@ class YandexMusicImpl: YandexMusic {
             val entity = response.entity
             val jsonString = EntityUtils.toString(entity)
             failureMsg += ", jsonString = $jsonString, statusCode = ${response.statusLine.statusCode}"
+
+            if (jsonString.contains("\"type\": \"captcha\"")) {
+                val captcha = mapper.readValue(jsonString, CaptchaDTO::class.java)
+                logger.info("captcha = {}", captcha)
+                return ResultOf.Captcha(captcha.captcha)
+            }
 
             val searchData = mapper.readValue(jsonString, ArtistSearchDTO::class.java)
             //println(searchData)
@@ -145,9 +162,14 @@ class YandexMusicImpl: YandexMusic {
             val jsonString = EntityUtils.toString(entity)
             failureMsg += ", jsonString = $jsonString, statusCode = ${response.statusLine.statusCode}"
 
+            if (jsonString.contains("\"type\": \"captcha\"")) {
+                val captcha = mapper.readValue(jsonString, CaptchaDTO::class.java)
+                logger.info("captcha = {}", captcha)
+                return ResultOf.Captcha(captcha.captcha)
+            }
+
             val artistData = mapper.readValue(jsonString, ArtistSearchDTO::class.java)
             //println(artistData)
-
             return ResultOf.Success(artistData)
         } catch (e: Throwable) {
             return ResultOf.Failure(failureMsg, ERROR_YANDEX_REQUEST_FAILED)
@@ -185,13 +207,11 @@ class YandexMusicImpl: YandexMusic {
             request.addHeader("Sec-Fetch-Mode", "cors")
             request.addHeader("Sec-Fetch-Site", "same-origin")
 
-
             val response = httpClient.execute(request)
             val entity = response.entity
             val jsonString = EntityUtils.toString(entity)
             failureMsg += ", statusCode = ${response.statusLine.statusCode}, jsonString = $jsonString"
 
-            // can be captcha type
             if (jsonString.contains("\"type\": \"captcha\"")) {
                 val captcha = mapper.readValue(jsonString, CaptchaDTO::class.java)
                 logger.info("captcha = {}", captcha)

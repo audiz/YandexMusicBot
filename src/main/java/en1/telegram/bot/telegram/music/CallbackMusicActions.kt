@@ -8,7 +8,6 @@ import en1.telegram.bot.telegram.callback.TrackCallback
 import org.telegram.telegrambots.meta.api.methods.send.SendDocument
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage
 import org.telegram.telegrambots.meta.api.objects.Message
-import org.telegram.telegrambots.meta.api.objects.Update
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton
 
 /**
@@ -18,7 +17,7 @@ interface CallbackMusicActions {
     /**
      * Find music information for search request and show to user
      * */
-    fun introMsg(msg: Message): ResultOf<SendMessage>
+    fun searchByString(chatId: String, text: String): ResultOf<SendMessage>
     /**
      * Show artist tracks to the user
      * */
@@ -26,7 +25,7 @@ interface CallbackMusicActions {
     /**
      * Show search information with pagination and handle page numbers
      * */
-    fun searchWithPagesMsg(userId: Int,chatId: String, callback: SearchTrackWithPagesCallback): ResultOf<SendMessage>
+    fun searchWithPagesMsg(userId: Int, chatId: String, callback: SearchTrackWithPagesCallback): ResultOf<SendMessage>
     /**
      * Show similar artists
      * */

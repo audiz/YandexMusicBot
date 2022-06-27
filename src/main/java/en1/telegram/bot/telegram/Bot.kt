@@ -64,28 +64,36 @@ class Bot(val fitToGpxConverter: FitToGpxConverter, val musicService: CallbackMu
             if (msg.hasDocument() && msg.document.fileName.lowercase().endsWith(".fit")) {
                 sendFitDoc(msg, update)
             } else {
-                if (allowedUsers.contains(userId.toString())) {
-                    val result = if (captchaService.containsKey(userId)) {
-                        logger.info("Process captcha msg = {}", msg.text)
-                        val captchaResult = captchaService.get(userId)
-                        captchaService.remove(userId)
-                        musicService.answerCaptcha(chatId, msg.text, captchaResult)
-                    } else {
-                        musicService.introMsg(msg)
-                    }
-                    // Show answer to user
-                    when (result) {
-                        is ResultOf.Success -> execute(result.value)
-                        is ResultOf.Failure -> sendCommandFailure(chatId, "Failure ${result.code}")
-                        is ResultOf.Captcha -> sendCommandFailure(chatId, "Failure captcha")
-                    }
-                } else {
-                    sendCommandUnknown(chatId)
-                }
+                processStringMsg(userId, chatId, msg.text)
             }
         }
     }
 
+    private fun processStringMsg(userId: Int, chatId: String, text: String) {
+        try {
+            if (allowedUsers.contains(userId.toString())) {
+                val result = if (captchaService.containsKey(userId)) {
+                    logger.info("Process captcha msg = {}", text)
+                    val captchaResult = captchaService.get(userId)
+                    captchaService.remove(userId)
+                    musicService.answerCaptcha(chatId, text, captchaResult)
+                } else {
+                    musicService.searchByString(chatId, text)
+                }
+                // Show answer to user
+                when (result) {
+                    is ResultOf.Success -> execute(result.value)
+                    is ResultOf.Failure -> sendCommandFailure(chatId, "Failure ${result.code}")
+                    is ResultOf.Captcha -> sendCommandFailure(chatId, "Failure captcha")
+                }
+            } else {
+                sendCommandUnknown(chatId)
+            }
+        } catch (e: Exception) {
+            logger.error("processStringMsg exception: {}", e.stackTraceToString())
+            sendInternalError(chatId)
+        }
+    }
 
     /**
      * Answer on different callback types for user
@@ -126,7 +134,7 @@ class Bot(val fitToGpxConverter: FitToGpxConverter, val musicService: CallbackMu
             sendMessage.text = "Captcha img path = ${captcha.captcha.imgUrl}"
             execute(sendMessage)
         } catch (e: Exception) {
-            e.printStackTrace()
+            logger.error("showCaptcha exception: {}", e.stackTraceToString())
         }
     }
 
@@ -149,7 +157,7 @@ class Bot(val fitToGpxConverter: FitToGpxConverter, val musicService: CallbackMu
             sendDocument.document = InputFile(stream, String.format("%s.gpx", docName.substringBeforeLast(".")))
             execute(sendDocument)
         } catch (e: Exception) {
-            e.printStackTrace()
+            logger.error("sendFitDoc exception: {}", e.stackTraceToString())
         }
     }
 
@@ -163,7 +171,21 @@ class Bot(val fitToGpxConverter: FitToGpxConverter, val musicService: CallbackMu
             sendMessage.text = "Unknown command, try /help"
             execute(sendMessage)
         } catch (e: Exception) {
-            e.printStackTrace()
+            logger.error("sendCommandUnknown exception: {}", e.stackTraceToString())
+        }
+    }
+
+    /**
+     * Send internal error
+     * */
+    private fun sendInternalError(chatId: String) {
+        try {
+            val sendMessage = SendMessage()
+            sendMessage.chatId = chatId
+            sendMessage.text = "Internal error while processing"
+            execute(sendMessage)
+        } catch (e: Exception) {
+            logger.error("sendInternalError exception: {}", e.stackTraceToString())
         }
     }
 
@@ -177,7 +199,7 @@ class Bot(val fitToGpxConverter: FitToGpxConverter, val musicService: CallbackMu
             sendMessage.text = failureMsg
             execute(sendMessage)
         } catch (e: Exception) {
-            e.printStackTrace()
+            logger.error("sendCommandFailure exception: {}", e.stackTraceToString())
         }
     }
 
