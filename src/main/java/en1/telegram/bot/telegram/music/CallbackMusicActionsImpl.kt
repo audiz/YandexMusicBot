@@ -1,6 +1,7 @@
 package en1.telegram.bot.telegram.music
 
 import en1.common.ResultOf
+import en1.common.returnNok
 import en1.telegram.bot.telegram.callback.*
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -24,8 +25,27 @@ private const val API_BUTTONS_ROW_LIMIT = 8
  * */
 @Component
 class CallbackMusicActionsImpl(val yandexMusic: YandexMusic) : CallbackMusicActions {
-    companion object {
-        private val logger = LoggerFactory.getLogger(CallbackMusicActionsImpl::class.java)
+    private val logger = LoggerFactory.getLogger(CallbackMusicActionsImpl::class.java)
+
+    /**
+     * Daily playlist for current yandex user
+     * */
+    override fun dailyPlaylist(chatId: String): ResultOf<SendMessage> {
+        val dailyPlaylist = yandexMusic.dailyPlaylist()
+        dailyPlaylist.returnNok { return it }
+        val dailyList = (dailyPlaylist as ResultOf.Success).value
+
+        val rowList: MutableList<List<InlineKeyboardButton>> = ArrayList()
+        createTrackButtons(dailyList.playlist.tracks.take(60), rowList, "")
+
+        val inlineKeyboardMarkup = InlineKeyboardMarkup()
+        inlineKeyboardMarkup.keyboard = rowList
+        val answer = SendMessage()
+        answer.text = "Daily playlist tracks count for user is ${dailyList.playlist.tracks.size}"
+        answer.chatId = chatId
+        answer.replyMarkup = inlineKeyboardMarkup
+
+        return ResultOf.Success(answer)
     }
 
     /**
@@ -59,7 +79,7 @@ class CallbackMusicActionsImpl(val yandexMusic: YandexMusic) : CallbackMusicActi
      * Pagination for artists tracks with similar artists.
      * Limit for json, when more than 150 we should request by ids
      * */
-    override fun artistWithPagesMsg(userId: Int, chatId: String, callback: ArtistTrackWithPagesCallback): ResultOf<SendMessage> {
+    override fun artistWithPagesMsg(userId: Long, chatId: String, callback: ArtistTrackWithPagesCallback): ResultOf<SendMessage> {
         val page = callback.page
         val searchResult = yandexMusic.searchTrack(callback.artistId)
         searchResult.returnNok { return it }
@@ -88,7 +108,7 @@ class CallbackMusicActionsImpl(val yandexMusic: YandexMusic) : CallbackMusicActi
     /**
      * Pagination for searched tracks
      * */
-    override fun searchWithPagesMsg(userId: Int, chatId: String, callback: SearchTrackWithPagesCallback): ResultOf<SendMessage> {
+    override fun searchWithPagesMsg(userId: Long, chatId: String, callback: SearchTrackWithPagesCallback): ResultOf<SendMessage> {
         //logger.info("searchWithPagesMsg callback = {}", callback)
         val page = callback.page
         val realPageForRequest = ((page - 1) * TRACKS_PER_PAGE) / 100
@@ -116,7 +136,7 @@ class CallbackMusicActionsImpl(val yandexMusic: YandexMusic) : CallbackMusicActi
     /**
      * Show similar artists
      * */
-    override fun similarMsg(userId: Int, chatId: String, callback: SimilarCallback): ResultOf<SendMessage> {
+    override fun similarMsg(userId: Long, chatId: String, callback: SimilarCallback): ResultOf<SendMessage> {
         val searchResult = yandexMusic.getSimilar(callback.artistId)
         searchResult.returnNok { return it }
 
@@ -137,7 +157,7 @@ class CallbackMusicActionsImpl(val yandexMusic: YandexMusic) : CallbackMusicActi
     /**
      * Download track and send it to user
      * */
-    override fun document(userId: Int, chatId: String, callback: TrackCallback, keyboardList: List<List<InlineKeyboardButton>>): ResultOf<SendDocument> {
+    override fun document(userId: Long, chatId: String, callback: TrackCallback, keyboardList: List<List<InlineKeyboardButton>>): ResultOf<SendDocument> {
         var songName = ""
         for (keyboard in keyboardList) {
             for (inlineBtn in keyboard) {
@@ -273,16 +293,5 @@ class CallbackMusicActionsImpl(val yandexMusic: YandexMusic) : CallbackMusicActi
         return Pair(left, right)
     }
 
-    /**
-     * Tun [block] to return non success result instantly
-     * */
-    private inline fun <reified T> ResultOf<T>.returnNok(block: (ResultOf<Nothing>) -> Unit) {
-        if (this is ResultOf.Failure) {
-            return block(this)
-        }
-        if (this is ResultOf.Captcha) {
-            return block(this)
-        }
-    }
 
 }

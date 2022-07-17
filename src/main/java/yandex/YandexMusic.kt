@@ -2,6 +2,7 @@ package yandex
 
 import en1.common.ResultOf
 import yandex.dto.ArtistSearchDTO
+import yandex.dto.DailyDTO
 import yandex.dto.download.DownloadInfo
 import yandex.dto.SearchDTO
 import yandex.dto.TrackSearchDTO
@@ -9,6 +10,10 @@ import yandex.dto.download.Storage
 import java.io.InputStream
 
 interface YandexMusic {
+    /**
+     * Return daily playlist(60 track) for current yandex user
+     * */
+    fun dailyPlaylist(): ResultOf<DailyDTO>
     fun search(search: String): ResultOf<SearchDTO>
     fun searchTrack(search: String, page: Int = 0): ResultOf<TrackSearchDTO>
     fun searchTrack(artistId: Int): ResultOf<ArtistSearchDTO>

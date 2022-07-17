@@ -5,12 +5,14 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import en1.common.ERROR_UNKNOWN_CALLBACK
 import en1.common.ResultOf
 import en1.telegram.bot.telegram.callback.*
+import en1.telegram.bot.telegram.commands.service.DailyPlaylistCommand
 import en1.telegram.bot.telegram.commands.service.HelpCommand
 import en1.telegram.bot.telegram.commands.service.StartCommand
 import en1.telegram.bot.telegram.music.CallbackMusicActions
 import en1.telegram.bot.telegram.nonCommand.NonCommand
 import en1.telegram.bot.telegram.service.CaptchaService
 import en1.telegram.bot.telegram.service.FitToGpxConverter
+import en1.telegram.bot.telegram.service.ResultMessageSender
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import org.telegram.telegrambots.extensions.bots.commandbot.TelegramLongPollingCommandBot
@@ -26,7 +28,8 @@ import java.io.InputStream
 
 
 @Component
-class Bot(val fitToGpxConverter: FitToGpxConverter, val musicService: CallbackMusicActions, val captchaService: CaptchaService): TelegramLongPollingCommandBot() {
+class Bot(val fitToGpxConverter: FitToGpxConverter, private val musicService: CallbackMusicActions, private val captchaService: CaptchaService,
+          private val resultMessageSender: ResultMessageSender): TelegramLongPollingCommandBot() {
     private var allowedUsers: List<String> = listOf()
     private val logger = LoggerFactory.getLogger(Bot::class.java)
     private val botUsername: String
@@ -69,7 +72,10 @@ class Bot(val fitToGpxConverter: FitToGpxConverter, val musicService: CallbackMu
         }
     }
 
-    private fun processStringMsg(userId: Int, chatId: String, text: String) {
+    /**
+     * Process direct user input to search tracks or answer captcha.
+     * */
+    private fun processStringMsg(userId: Long, chatId: String, text: String) {
         try {
             if (allowedUsers.contains(userId.toString())) {
                 val result = if (captchaService.containsKey(userId)) {
@@ -80,12 +86,8 @@ class Bot(val fitToGpxConverter: FitToGpxConverter, val musicService: CallbackMu
                 } else {
                     musicService.searchByString(chatId, text)
                 }
-                // Show answer to user
-                when (result) {
-                    is ResultOf.Success -> execute(result.value)
-                    is ResultOf.Failure -> sendCommandFailure(chatId, "Failure ${result.code}")
-                    is ResultOf.Captcha -> sendCommandFailure(chatId, "Failure captcha")
-                }
+
+                resultMessageSender.sendMessageAnswer(userId, chatId, result, this)
             } else {
                 sendCommandUnknown(chatId)
             }
@@ -98,8 +100,7 @@ class Bot(val fitToGpxConverter: FitToGpxConverter, val musicService: CallbackMu
     /**
      * Answer on different callback types for user
      * */
-    private fun processCallback(callback: Callbacks, userId: Int, chatId: String, keyboardList: List<List<InlineKeyboardButton>>? = null) {
-
+    private fun processCallback(callback: Callbacks, userId: Long, chatId: String, keyboardList: List<List<InlineKeyboardButton>>? = null) {
         val callbackResult = when (callback) {
             is TrackCallback -> musicService.document(userId, chatId, callback, keyboardList!!)
             is SearchTrackWithPagesCallback -> musicService.searchWithPagesMsg(userId, chatId, callback)
@@ -107,35 +108,7 @@ class Bot(val fitToGpxConverter: FitToGpxConverter, val musicService: CallbackMu
             is SimilarCallback -> musicService.similarMsg(userId, chatId, callback)
             is UnknownCallback -> ResultOf.Failure("None callback", ERROR_UNKNOWN_CALLBACK)
         }
-
-        when (callbackResult) {
-            is ResultOf.Success -> when (callbackResult.value) {
-                is SendMessage -> execute(callbackResult.value)
-                is SendDocument -> execute(callbackResult.value)
-            }
-            is ResultOf.Captcha -> showCaptcha(userId, chatId, callbackResult)
-            is ResultOf.Failure -> {
-                logger.error("Failure msg = ${callbackResult.message}, code = ${callbackResult.code}")
-                sendCommandFailure(chatId, "Bot failed with code '${callbackResult.code}'")
-            }
-        }
-    }
-
-    /**
-     * Send command is unknown
-     * */
-    private fun showCaptcha(userId: Int, chatId: String, captcha: ResultOf.Captcha) {
-        try {
-            captchaService.put(userId, captcha)
-            logger.info("captchaService.containsKey(userId) = {}", captchaService.containsKey(userId))
-
-            val sendMessage = SendMessage()
-            sendMessage.chatId = chatId
-            sendMessage.text = "Captcha img path = ${captcha.captcha.imgUrl}"
-            execute(sendMessage)
-        } catch (e: Exception) {
-            logger.error("showCaptcha exception: {}", e.stackTraceToString())
-        }
+        resultMessageSender.sendMessage(userId, chatId, callbackResult, this)
     }
 
     /**
@@ -189,20 +162,6 @@ class Bot(val fitToGpxConverter: FitToGpxConverter, val musicService: CallbackMu
         }
     }
 
-    /**
-     * Send command is failed
-     * */
-    private fun sendCommandFailure(chatId: String, failureMsg: String) {
-        try {
-            val sendMessage = SendMessage()
-            sendMessage.chatId = chatId
-            sendMessage.text = failureMsg
-            execute(sendMessage)
-        } catch (e: Exception) {
-            logger.error("sendCommandFailure exception: {}", e.stackTraceToString())
-        }
-    }
-
     companion object {
         private val mapper = jacksonObjectMapper()
         init {
@@ -221,6 +180,7 @@ class Bot(val fitToGpxConverter: FitToGpxConverter, val musicService: CallbackMu
 
         register(StartCommand("start", "Начало"))
         register(HelpCommand("help", "Помощь"))
+        register(DailyPlaylistCommand("daily", "Daily playlist", musicService, resultMessageSender))
         logger.info("Бот создан!")
     }
 }

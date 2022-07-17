@@ -6,21 +6,17 @@ import java.util.concurrent.ConcurrentHashMap
 
 @Component
 class CaptchaServiceImpl : CaptchaService {
-    private val captchaMap = ConcurrentHashMap<Int, ResultOf.Captcha>()
-
-    override fun put(userId: Int, captcha: ResultOf.Captcha) {
+    private val captchaMap = ConcurrentHashMap<Long, ResultOf.Captcha>()
+    override fun put(userId: Long, captcha: ResultOf.Captcha) {
         captchaMap[userId] = captcha
     }
-
-    override fun containsKey(userId: Int): Boolean {
+    override fun containsKey(userId: Long): Boolean {
         return captchaMap.containsKey(userId)
     }
-
-    override fun remove(userId: Int) {
+    override fun remove(userId: Long) {
         captchaMap.remove(userId)
     }
-
-    override fun get(userId: Int): ResultOf.Captcha {
+    override fun get(userId: Long): ResultOf.Captcha {
         return captchaMap[userId]!!
     }
 }

@@ -15,25 +15,30 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKe
  * */
 interface CallbackMusicActions {
     /**
+     * Return a daily playlist for the current yandex music
+     * */
+    fun dailyPlaylist(chatId: String): ResultOf<SendMessage>
+
+    /**
      * Find music information for search request and show to user
      * */
     fun searchByString(chatId: String, text: String): ResultOf<SendMessage>
     /**
      * Show artist tracks to the user
      * */
-    fun artistWithPagesMsg(userId: Int, chatId: String, callback: ArtistTrackWithPagesCallback): ResultOf<SendMessage>
+    fun artistWithPagesMsg(userId: Long, chatId: String, callback: ArtistTrackWithPagesCallback): ResultOf<SendMessage>
     /**
      * Show search information with pagination and handle page numbers
      * */
-    fun searchWithPagesMsg(userId: Int, chatId: String, callback: SearchTrackWithPagesCallback): ResultOf<SendMessage>
+    fun searchWithPagesMsg(userId: Long, chatId: String, callback: SearchTrackWithPagesCallback): ResultOf<SendMessage>
     /**
      * Show similar artists
      * */
-    fun similarMsg(userId: Int,chatId: String, callback: SimilarCallback): ResultOf<SendMessage>
+    fun similarMsg(userId: Long, chatId: String, callback: SimilarCallback): ResultOf<SendMessage>
     /**
      * Send mp3 track to user
      * */
-    fun document(userId: Int,chatId: String, callback: TrackCallback, keyboardList: List<List<InlineKeyboardButton>>): ResultOf<SendDocument>
+    fun document(userId: Long, chatId: String, callback: TrackCallback, keyboardList: List<List<InlineKeyboardButton>>): ResultOf<SendDocument>
     /**
      * Answer captcha
      * */
