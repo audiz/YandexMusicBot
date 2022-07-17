@@ -420,20 +420,3 @@ class YandexMusicImpl: YandexMusic {
 
 4. https://yandex.ru/checkcaptcha?key=00ACRFWBWsxeMuItX1N97CDIo16HDazj_0%2F1577600475%2F4aeb08da4d0bf27fbf0c95652d753e12_fbf57a16d5d7e4d5ef12bff5e732911c&retpath=https%3A%2F%2Fyandex.ru%2Fsearch%3Ftext%3DNokian%2520Tyres%2520Hakkapeliitta%2520R3%2520SUV%26lr%3D213_588b7ac2ffec570ccaf34175752f8292&rep=bacteria+%D0%A4%D0%9E%D0%A0%D0%9C%D0%90%D0%A2%D0%95
  * */
-
-// yamusic-daily
-//GET /handlers/playlist.jsx?owner=yamusic-daily&kinds=153850731&light=true&madeFor=&lang=ru&external-domain= HTTP/1.1
-//Host: music.yandex.ru
-//User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:102.0) Gecko/20100101 Firefox/102.0
-//Accept: application/json, text/javascript, */*; q=0.01
-//Accept-Language: en-US,en;q=0.5
-//Accept-Encoding: gzip, deflate, br
-//Referer: https://music.yandex.ru/home?utm_source=main_stripe_big
-//X-Current-UID: 23858391
-//X-Retpath-Y: https://music.yandex.ru/home?utm_source=main_stripe_big
-//X-Requested-With: XMLHttpRequest
-//Connection: keep-alive
-//Cookie: yp=1689541661.ygu.1#1673507974.szm.1:1920x1080:1920x924#1660418591.csc.2#1973100111.multib.1#1973100138.udn.cDphdWRpeng%3D#1660505393.los.1#1660505393.losc.0#1658518189.mcv.0#1658518189.mcl.luwcxq; mda=0; yandex_gid=20595; yandexuid=9254201281657739922; yuidss=9254201281657739922; is_gdpr=0; is_gdpr_b=CLHWdRCWfigC; _yasc=AY/qvCpIB8WTJXlOHNwiLPAx832kOmGI1oV4Bm8F5XMaSbQWBOvVL92RmoqgNFQC; i=o7v8D8PuKAR6oWVyJLItzZlxnHoQne6dEbRrRchMBgYxUUrKja63h6ynyLXvb//fGllw5InUsuL2GPniKaa7MFYcpmY=; yabs-frequency=/5/0000000000000000/1LmOhY66wcEGHo6hjsTNW1bpKP178IBjJmGCfCPka4SZ/; my=YwA=; ymex=1973099924.yrts.1657739924; gdpr=0; _ym_uid=1657739925267286406; L=WU1lU1xpfXQLVH1TC0Z9BVsHcHRXBFhXLhcdUAMt.1657740138.15037.336622.9a2815948e11ba8c98a3f606a0cf749c; yandex_login=audizx; lastVisitedPage=%7B%2269480935%22%3A%22%2Falbum%2F19035493%2Ftrack%2F89439864%22%7D; Session_id=3:1658005541.5.0.1657740138411:YUAusg:44.1.2:1|23858391.0.2|3:10255371.682818.VGQzX64BSrBFWuLvY-3NmEwhylU; sessionid2=3:1658005541.5.0.1657740138411:YUAusg:44.1.2:1.499:1|23858391.0.2|3:10255371.26158.xQWjZNz9NhcZAi0jYAot4nVACgQ; BgeeyNoBJuyII=1; bltsr=1; ys=wprid.1657913388075800-9822007093137786454-sas3-0804-36f-sas-l7-balancer-8080-BAL-7604; _ym_isad=1; _ym_d=1658005662; computer=1; device_id=a28fd0ae44b2b6ea6e71fbb7d302dfd5c9bfe13f3; active-browser-timestamp=1658006642954; _ym_visorc=w
-//Sec-Fetch-Dest: empty
-//Sec-Fetch-Mode: cors
-//Sec-Fetch-Site: same-origin
