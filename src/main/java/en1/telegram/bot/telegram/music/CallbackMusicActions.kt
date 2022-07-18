@@ -7,13 +7,18 @@ import en1.telegram.bot.telegram.callback.SimilarCallback
 import en1.telegram.bot.telegram.callback.TrackCallback
 import org.telegram.telegrambots.meta.api.methods.send.SendDocument
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage
-import org.telegram.telegrambots.meta.api.objects.Message
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton
 
 /**
  * Actions for users callbacks from telegram
  * */
 interface CallbackMusicActions {
+
+    /**
+     * Show playlists
+     * */
+    fun getPlaylists(chatId: String): ResultOf<SendMessage>
+
     /**
      * Return a daily playlist for the current yandex music
      * */

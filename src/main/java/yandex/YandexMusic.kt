@@ -13,9 +13,9 @@ interface YandexMusic {
      * */
     fun getPlaylists(): ResultOf<PlaylistsDTO>
     /**
-     * Return daily playlist(60 track) for current yandex user
+     * Return playlist by [playlistId]
      * */
-    fun dailyPlaylist(): ResultOf<DailyDTO>
+    fun getPlaylist(playlistId: Long): ResultOf<DailyDTO>
     fun search(search: String): ResultOf<SearchDTO>
     fun searchTrack(search: String, page: Int = 0): ResultOf<TrackSearchDTO>
     fun searchTrack(artistId: Int): ResultOf<ArtistSearchDTO>

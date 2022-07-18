@@ -28,10 +28,34 @@ class CallbackMusicActionsImpl(val yandexMusic: YandexMusic) : CallbackMusicActi
     private val logger = LoggerFactory.getLogger(CallbackMusicActionsImpl::class.java)
 
     /**
+     * Show playlists
+     * */
+    override fun getPlaylists(chatId: String): ResultOf<SendMessage> {
+        val dailyIdResult = yandexMusic.getPlaylists()
+        dailyIdResult.returnNok { return it }
+        val dailyPlaylists = (dailyIdResult as ResultOf.Success).value
+        val playlists = dailyPlaylists.blocks.flatMap {
+            blocks -> blocks.entities.map {
+                it.data.data?.title
+            }
+        }
+        val answer = SendMessage()
+        answer.text = "Playlists ${playlists}"
+        answer.chatId = chatId
+        return ResultOf.Success(answer)
+    }
+
+    /**
      * Daily playlist for current yandex user
      * */
     override fun dailyPlaylist(chatId: String): ResultOf<SendMessage> {
-        val dailyPlaylist = yandexMusic.dailyPlaylist()
+        val dailyIdResult = yandexMusic.getPlaylists()
+        dailyIdResult.returnNok { return it }
+        val dailyPlaylists = (dailyIdResult as ResultOf.Success).value
+        val playlistId = dailyPlaylists.blocks.map { blocks -> blocks.entities.find { it.data.data?.title == "Плейлист дня" } }.first()?.data?.data?.kind!!
+        //val playlistId = 153850731
+
+        val dailyPlaylist = yandexMusic.getPlaylist(playlistId)
         dailyPlaylist.returnNok { return it }
         val dailyList = (dailyPlaylist as ResultOf.Success).value
 
@@ -292,6 +316,4 @@ class CallbackMusicActionsImpl(val yandexMusic: YandexMusic) : CallbackMusicActi
         }
         return Pair(left, right)
     }
-
-
 }

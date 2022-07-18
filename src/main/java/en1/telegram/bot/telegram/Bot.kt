@@ -3,6 +3,7 @@ package en1.telegram.bot.telegram
 import en1.common.EnvConfiguration
 import en1.telegram.bot.telegram.commands.service.DailyPlaylistCommand
 import en1.telegram.bot.telegram.commands.service.HelpCommand
+import en1.telegram.bot.telegram.commands.service.PlaylistsCommand
 import en1.telegram.bot.telegram.commands.service.StartCommand
 import en1.telegram.bot.telegram.music.CallbackMusicActions
 import en1.telegram.bot.telegram.service.CommandProcessor
@@ -23,6 +24,7 @@ class Bot(val envConfiguration: EnvConfiguration, val commandProcessor: CommandP
         register(StartCommand("start", "Начало"))
         register(HelpCommand("help", "Помощь"))
         register(DailyPlaylistCommand("daily", "Daily playlist", musicService, messageSender))
+        register(PlaylistsCommand("playlists", "All playlists", musicService, messageSender))
         logger.info("Бот создан!")
     }
 

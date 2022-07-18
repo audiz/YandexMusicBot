@@ -29,186 +29,95 @@ class YandexMusicImpl(val envConfiguration: EnvConfiguration): YandexMusic {
         init {
             mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
         }
-    }
-
-    private fun addStandardHeaders(request: HttpGet) {
-        request.addHeader("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:99.0) Gecko/20100101 Firefox/99.0")
-        request.addHeader("Accept", "application/json, text/javascript, */*; q=0.01")
-        request.addHeader("Accept-Language", "en-US,en;q=0.5")
-        request.addHeader("X-Requested-With", "XMLHttpRequest")
-        request.addHeader("Connection", "keep-alive")
-        request.addHeader("Sec-Fetch-Dest", "empty")
-        request.addHeader("Sec-Fetch-Mode", "cors")
-        request.addHeader("Sec-Fetch-Site", "same-origin")
+        private val DEFAULT_HEADERS = mapOf(
+            "User-Agent" to "Mozilla/5.0 (X11; Linux x86_64; rv:99.0) Gecko/20100101 Firefox/99.0",
+            "Accept" to "application/json, text/javascript, */*; q=0.01",
+            "Accept-Language" to "en-US,en;q=0.5",
+            "X-Requested-With" to "XMLHttpRequest",
+            "Connection" to "keep-alive",
+            "Sec-Fetch-Dest" to "empty",
+            "Sec-Fetch-Mode" to "cors",
+            "Sec-Fetch-Site" to "same-origin"
+        )
     }
 
     override fun getPlaylists(): ResultOf<PlaylistsDTO> {
-        var failureMsg = ""
         try {
-            failureMsg = "Request to /main.jsx?what=home&lang=ru&external-domain="
-            val request = HttpGet("https://music.yandex.ru/handlers/main.jsx?what=home&lang=ru&external-domain=")
-            request.addHeader("Referer", "https://music.yandex.ru/home")
-            request.addHeader("X-Retpath-Y", "https://music.yandex.ru/home")
-            if (envConfiguration.getYandexCookie() != null) {
-                request.addHeader("Cookie", envConfiguration.getYandexCookie())
-            }
-            addStandardHeaders(request)
+            val headers = mutableMapOf("Referer" to "https://music.yandex.ru/home", "X-Retpath-Y" to "https://music.yandex.ru/home")
+            envConfiguration.getYandexCookie()?.let { headers["Cookie"] = it }
 
-            val response = httpClient.execute(request)
-            val entity = response.entity
-            val jsonString = EntityUtils.toString(entity)
-            failureMsg += ", jsonString = $jsonString, statusCode = ${response.statusLine.statusCode}"
-
-            if (jsonString.contains("\"type\": \"captcha\"")) {
-                val captcha = mapper.readValue(jsonString, CaptchaDTO::class.java)
-                logger.info("captcha = {}", captcha)
-                return ResultOf.Captcha(captcha.captcha)
-            }
-
-            //logger.info("jsonString = {}", jsonString)
+            val url = "https://music.yandex.ru/handlers/main.jsx?what=home&lang=ru&external-domain="
+            val jsonString = httpGet(url, headers) { return it }
+            logger.info("jsonString = {}", jsonString)
             val playlistsDTO = mapper.readValue(jsonString, PlaylistsDTO::class.java)
             return ResultOf.Success(playlistsDTO)
         } catch (e: Throwable) {
             e.printStackTrace()
-            return ResultOf.Failure(failureMsg, ERROR_YANDEX_REQUEST_FAILED)
+            return ResultOf.Failure(e.message!!, ERROR_YANDEX_REQUEST_FAILED)
         }
     }
 
-    override fun dailyPlaylist(): ResultOf<DailyDTO> {
-        var failureMsg = ""
+    override fun getPlaylist(playlistId: Long): ResultOf<DailyDTO> {
         try {
-            val dailyIdResult = getPlaylists()
-            dailyIdResult.returnNok { return it }
-            val dailyPlaylists = (dailyIdResult as ResultOf.Success).value
-
-            val dailyId = dailyPlaylists.blocks.map { it.entities.find { it.data.data?.title == "Плейлист дня" } }.first()?.data?.data?.kind
-            //val dailyId = 153850731
-
-            failureMsg = "Request to /playlist.jsx?owner=yamusic-daily"
-            val request = HttpGet("https://music.yandex.ru/handlers/playlist.jsx?owner=yamusic-daily&kinds=${dailyId}&light=true&madeFor=&lang=ru&external-domain=")
-            addStandardHeaders(request)
-
-            val response = httpClient.execute(request)
-            val entity = response.entity
-            val jsonString = EntityUtils.toString(entity)
-            failureMsg += ", jsonString = $jsonString, statusCode = ${response.statusLine.statusCode}"
-
-            if (jsonString.contains("\"type\": \"captcha\"")) {
-                val captcha = mapper.readValue(jsonString, CaptchaDTO::class.java)
-                logger.info("captcha = {}", captcha)
-                return ResultOf.Captcha(captcha.captcha)
-            }
-
+            val url = "https://music.yandex.ru/handlers/playlist.jsx?owner=yamusic-daily&kinds=${playlistId}&light=true&madeFor=&lang=ru&external-domain="
+            val jsonString = httpGet(url) { return it }
             val searchData = mapper.readValue(jsonString, DailyDTO::class.java)
             //println(searchData)
             return ResultOf.Success(searchData)
         } catch (e: Throwable) {
             e.printStackTrace()
-            return ResultOf.Failure(failureMsg, ERROR_YANDEX_REQUEST_FAILED)
+            return ResultOf.Failure(e.message!!, ERROR_YANDEX_REQUEST_FAILED)
         }
     }
+
     override fun search(search: String): ResultOf<SearchDTO> {
-        var failureMsg = ""
         try {
-            failureMsg = "Request to /music-search.jsx?text=$search"
-            val request = HttpGet("https://music.yandex.ru/handlers/music-search.jsx?text=$search&type=all&clientNow=${System.currentTimeMillis()}&lang=ru&external-domain=")
-            addStandardHeaders(request)
-
-            val response = httpClient.execute(request)
-            val entity = response.entity
-            val jsonString = EntityUtils.toString(entity)
-            failureMsg += ", jsonString = $jsonString, statusCode = ${response.statusLine.statusCode}"
-
-            if (jsonString.contains("\"type\": \"captcha\"")) {
-                val captcha = mapper.readValue(jsonString, CaptchaDTO::class.java)
-                logger.info("captcha = {}", captcha)
-                return ResultOf.Captcha(captcha.captcha)
-            }
-
+            val url = "https://music.yandex.ru/handlers/music-search.jsx?text=$search&type=all&clientNow=${System.currentTimeMillis()}&lang=ru&external-domain="
+            val jsonString = httpGet(url) { return it }
             val searchData = mapper.readValue(jsonString, SearchDTO::class.java)
-            //println(searchData)
             return ResultOf.Success(searchData)
         } catch (e: Throwable) {
-            return ResultOf.Failure(failureMsg, ERROR_YANDEX_REQUEST_FAILED)
+            e.printStackTrace()
+            return ResultOf.Failure(e.message!!, ERROR_YANDEX_REQUEST_FAILED)
         }
     }
 
     override fun searchTrack(search: String, page: Int): ResultOf<TrackSearchDTO> {
-        var failureMsg = ""
         try {
-            failureMsg = "Request to /music-search.jsx?text=$search&type=tracks"
-            val request = HttpGet("https://music.yandex.ru/handlers/music-search.jsx?text=$search&type=tracks&page=$page&clientNow=${System.currentTimeMillis()}&lang=ru&external-domain=")
-            addStandardHeaders(request)
-
-            val response = httpClient.execute(request)
-            val entity = response.entity
-            val jsonString = EntityUtils.toString(entity)
-            failureMsg += ", jsonString = $jsonString, statusCode = ${response.statusLine.statusCode}"
-
-            if (jsonString.contains("\"type\": \"captcha\"")) {
-                val captcha = mapper.readValue(jsonString, CaptchaDTO::class.java)
-                logger.info("captcha = {}", captcha)
-                return ResultOf.Captcha(captcha.captcha)
-            }
-
+            val url = "https://music.yandex.ru/handlers/music-search.jsx?text=$search&type=tracks&page=$page&clientNow=${System.currentTimeMillis()}&lang=ru&external-domain="
+            val jsonString = httpGet(url) { return it }
             val searchData = mapper.readValue(jsonString, TrackSearchDTO::class.java)
             //println(searchData)
             return ResultOf.Success(searchData)
         } catch (e: Throwable) {
-            return ResultOf.Failure(failureMsg, ERROR_YANDEX_REQUEST_FAILED)
+            e.printStackTrace()
+            return ResultOf.Failure(e.message!!, ERROR_YANDEX_REQUEST_FAILED)
         }
     }
 
     override fun searchTrack(artistId: Int): ResultOf<ArtistSearchDTO> {
-        var failureMsg = ""
         try {
-            failureMsg = "Request to /artist.jsx?artist=$artistId&what=tracks"
-            val request = HttpGet("https://music.yandex.ru/handlers/artist.jsx?artist=$artistId&what=tracks&sort=&dir=&period=&lang=ru&external-domain=")
-            addStandardHeaders(request)
-
-            val response = httpClient.execute(request)
-            val entity = response.entity
-            val jsonString = EntityUtils.toString(entity)
-            failureMsg += ", jsonString = $jsonString, statusCode = ${response.statusLine.statusCode}"
-
-            if (jsonString.contains("\"type\": \"captcha\"")) {
-                val captcha = mapper.readValue(jsonString, CaptchaDTO::class.java)
-                logger.info("captcha = {}", captcha)
-                return ResultOf.Captcha(captcha.captcha)
-            }
-
+            val url = "https://music.yandex.ru/handlers/artist.jsx?artist=$artistId&what=tracks&sort=&dir=&period=&lang=ru&external-domain="
+            val jsonString = httpGet(url) { return it }
             val searchData = mapper.readValue(jsonString, ArtistSearchDTO::class.java)
             //println(searchData)
-
             return ResultOf.Success(searchData)
         } catch (e: Throwable) {
-            return ResultOf.Failure(failureMsg, ERROR_YANDEX_REQUEST_FAILED)
+            e.printStackTrace()
+            return ResultOf.Failure(e.message!!, ERROR_YANDEX_REQUEST_FAILED)
         }
     }
 
     override fun getArtist(id: Int): ResultOf<ArtistSearchDTO> {
-        var failureMsg = ""
         try {
-            failureMsg = "Request to /artist.jsx?artist=$id&lang=ru"
-            val request = HttpGet("https://music.yandex.ru/handlers/artist.jsx?artist=$id&lang=ru&external-domain=")
-            addStandardHeaders(request)
-
-            val response = httpClient.execute(request)
-            val entity = response.entity
-            val jsonString = EntityUtils.toString(entity)
-            failureMsg += ", jsonString = $jsonString, statusCode = ${response.statusLine.statusCode}"
-
-            if (jsonString.contains("\"type\": \"captcha\"")) {
-                val captcha = mapper.readValue(jsonString, CaptchaDTO::class.java)
-                logger.info("captcha = {}", captcha)
-                return ResultOf.Captcha(captcha.captcha)
-            }
-
+            val url = "https://music.yandex.ru/handlers/artist.jsx?artist=$id&lang=ru&external-domain="
+            val jsonString = httpGet(url) { return it }
             val artistData = mapper.readValue(jsonString, ArtistSearchDTO::class.java)
             //println(artistData)
             return ResultOf.Success(artistData)
         } catch (e: Throwable) {
-            return ResultOf.Failure(failureMsg, ERROR_YANDEX_REQUEST_FAILED)
+            e.printStackTrace()
+            return ResultOf.Failure(e.message!!, ERROR_YANDEX_REQUEST_FAILED)
         }
     }
 
@@ -217,105 +126,69 @@ class YandexMusicImpl(val envConfiguration: EnvConfiguration): YandexMusic {
         val retpath = captcha.captcha.captchaPage.substringAfter("retpath=").substringBefore("&")
         val u = captcha.captcha.captchaPage.substringAfter("u=").substringBefore("&")
         val request = HttpGet("https://music.yandex.ru/checkcaptcha?key=${captchaKey}&retpath=${retpath}&u=${u}&rep=${answer.urlEncode()}")
-
         val response = httpClient.execute(request)
         val answerString = EntityUtils.toString(response.entity)
-
         logger.info("statusCode = {}, answerString = {}", response.statusLine.statusCode, answerString)
         return true
     }
 
     override fun getSimilar(artistId: Int): ResultOf<ArtistSearchDTO> {
-        var failureMsg = ""
         try {
-            failureMsg = "Request to /artist.jsx?artist=$artistId&what=similar"
-
-            val request = HttpGet("https://music.yandex.ru/handlers/artist.jsx?artist=$artistId&what=similar")
-            request.addHeader("Referer", "https://music.yandex.ru/artist/$artistId/similar")
-            request.addHeader("X-Retpath-Y", "https://music.yandex.ru/artist/$artistId/similar")
-            addStandardHeaders(request)
-
-            val response = httpClient.execute(request)
-            val entity = response.entity
-            val jsonString = EntityUtils.toString(entity)
-            failureMsg += ", statusCode = ${response.statusLine.statusCode}, jsonString = $jsonString"
-
-            if (jsonString.contains("\"type\": \"captcha\"")) {
-                val captcha = mapper.readValue(jsonString, CaptchaDTO::class.java)
-                logger.info("captcha = {}", captcha)
-                return ResultOf.Captcha(captcha.captcha)
-            }
-
+            val headers = mapOf(
+                "Referer" to "https://music.yandex.ru/artist/$artistId/similar",
+                "X-Retpath-Y" to "https://music.yandex.ru/artist/$artistId/similar"
+            )
+            val url = "https://music.yandex.ru/handlers/artist.jsx?artist=$artistId&what=similar"
+            val jsonString = httpGet(url, headers) { return it }
             val artistData = mapper.readValue(jsonString, ArtistSearchDTO::class.java)
             //println(artistData)
-
             return ResultOf.Success(artistData)
         } catch (e: Throwable) {
-            return ResultOf.Failure(failureMsg, ERROR_YANDEX_REQUEST_FAILED)
+            e.printStackTrace()
+            return ResultOf.Failure(e.message!!, ERROR_YANDEX_REQUEST_FAILED)
         }
     }
 
     // TODO return nullable and wrap answer to object
     override fun findStorage(trackId: Int, artistId: Int): ResultOf<Storage> {
-        var failureMsg = ""
         try {
-            failureMsg = "Request to /api/v2.1/handlers/track/$trackId:$artistId/"
-            val request = HttpGet("https://music.yandex.ru/api/v2.1/handlers/track/$trackId:$artistId/web-search-track-track-saved/download/m?hq=0&external-domain=")
-            request.addHeader("Referer", "https://music.yandex.ru/artist/$artistId/tracks")
-            request.addHeader("X-Retpath-Y", "https%3A%2F%2Fmusic.yandex.ru%2Fartist%2F$artistId%2Ftracks")
-            request.addHeader("X-Yandex-Music-Client", "YandexMusicAPI")
-            if (envConfiguration.getYandexCookie() != null) {
-                request.addHeader("Cookie", envConfiguration.getYandexCookie())
-            }
-            addStandardHeaders(request)
+            val headers = mutableMapOf(
+                "Referer" to "https://music.yandex.ru/artist/$artistId/tracks",
+                "X-Retpath-Y" to "https%3A%2F%2Fmusic.yandex.ru%2Fartist%2F$artistId%2Ftracks",
+                "X-Yandex-Music-Client" to "YandexMusicAPI"
+            )
+            envConfiguration.getYandexCookie()?.let { headers["Cookie"] = it }
 
-            val response = httpClient.execute(request)
-            val entity = response.entity
-            val jsonString = EntityUtils.toString(entity)
-
-            failureMsg += ", statusCode = ${response.statusLine.statusCode}, jsonString = $jsonString"
-
-            if (jsonString.isEmpty() || "{\"error\":\"HTTP-ERROR\"}" == jsonString) {
-                logger.warn("Failed to get storage for trackId = {}, artistId = {}, jsonString = {}", trackId, artistId, jsonString)
-                return ResultOf.Failure(failureMsg, ERROR_MSG_IN_YANDEX_JSON)
-            }
-
+            val url = "https://music.yandex.ru/api/v2.1/handlers/track/$trackId:$artistId/web-search-track-track-saved/download/m?hq=0&external-domain="
+            val jsonString = httpGet(url, headers) { return it }
             val storageData = mapper.readValue(jsonString, Storage::class.java)
             return ResultOf.Success(storageData)
         } catch (e: Throwable) {
-            return ResultOf.Failure(failureMsg, ERROR_YANDEX_REQUEST_FAILED)
+            e.printStackTrace()
+            return ResultOf.Failure(e.message!!, ERROR_YANDEX_REQUEST_FAILED)
         }
     }
 
     override fun findFileLocation(storageDTO: Storage, search: String): ResultOf<DownloadInfo> {
-        var failureMsg = ""
         try {
-            failureMsg = "Request to /storage/"
-            val request = HttpGet("https:${storageDTO.src}")
-            request.addHeader("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:99.0) Gecko/20100101 Firefox/99.0")
-            request.addHeader("Accept", "application/json; q=1.0, text/*; q=0.8, */*; q=0.1")
-            request.addHeader("Accept-Language", "en-US,en;q=0.5")
+            val headers = mutableMapOf(
+                "Origin" to "https://music.yandex.ru",
+                "X-Requested-With" to null,
+                "Sec-Fetch-Site" to "cross-site"
+            )
             if (search.isNotEmpty()) {
-                request.addHeader("Referer", "https://music.yandex.ru/search?text=$search")
+                headers["Referer"] = "https://music.yandex.ru/search?text=$search"
             }
-            request.addHeader("Origin", "https://music.yandex.ru")
-            request.addHeader("Connection", "keep-alive")
-            request.addHeader("Sec-Fetch-Dest", "empty")
-            request.addHeader("Sec-Fetch-Mode", "cors")
-            request.addHeader("Sec-Fetch-Site", "cross-site")
-
-            val response = httpClient.execute(request)
-            val entity = response.entity
-            val xmlString = EntityUtils.toString(entity)
-            failureMsg += ", xmlString = $xmlString, statusCode = ${response.statusLine.statusCode}"
-
+            val url = "https:${storageDTO.src}"
+            val xmlString = httpGet(url, headers) { return it }
             val xmlJSONObj: JSONObject = XML.toJSONObject(xmlString)
             val jsonPrettyPrintString = xmlJSONObj.toString(0)
 
             val xmlDownloadDTO = mapper.readValue(jsonPrettyPrintString, XmlDownload::class.java)
             return ResultOf.Success(xmlDownloadDTO.downloadInfo)
         } catch (e: Throwable) {
-            return ResultOf.Failure(failureMsg, ERROR_YANDEX_REQUEST_FAILED)
+            e.printStackTrace()
+            return ResultOf.Failure(e.message!!, ERROR_YANDEX_REQUEST_FAILED)
         }
     }
 
@@ -340,6 +213,26 @@ class YandexMusicImpl(val envConfiguration: EnvConfiguration): YandexMusic {
         } catch (e: Throwable) {
             return ResultOf.Failure(failureMsg, ERROR_YANDEX_REQUEST_FAILED)
         }
+    }
+
+    private inline fun httpGet(url: String, map: Map<String, String?>? = null, block: (ResultOf<Nothing>) -> String): String {
+        var failureMsg  = "Request to ${url.substringAfter("https://music.yandex.ru/handlers")}"
+        val request = HttpGet(url)
+
+        val combinedHeaders: Map<String, String?> = DEFAULT_HEADERS + (map ?: mapOf())
+        combinedHeaders.forEach { (key, value) -> if (value != null) request.addHeader(key, value) }
+
+        val response = httpClient.execute(request)
+        val entity = response.entity
+        val jsonString = EntityUtils.toString(entity)
+        failureMsg += ", jsonString = $jsonString, statusCode = ${response.statusLine.statusCode}"
+
+        if (jsonString.contains("\"type\": \"captcha\"")) {
+            val captcha = mapper.readValue(jsonString, CaptchaDTO::class.java)
+            logger.info("captcha = {}", captcha)
+            return block(ResultOf.Captcha(captcha.captcha))
+        }
+        return jsonString
     }
 }
 
