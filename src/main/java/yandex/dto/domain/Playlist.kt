@@ -1,4 +1,3 @@
 package yandex.dto.domain
 
-class Playlist(val tracks: List<TrackItem>) {
-}
+data class Playlist(val tracks: List<TrackItem>)

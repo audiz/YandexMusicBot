@@ -1,6 +1,7 @@
 package en1.telegram.bot.telegram.service
 
 import en1.common.ERROR_UNKNOWN_CALLBACK
+import en1.common.EnvConfiguration
 import en1.common.ResultOf
 import en1.telegram.bot.telegram.callback.*
 import en1.telegram.bot.telegram.music.CallbackMusicActions
@@ -11,18 +12,24 @@ import org.telegram.telegrambots.meta.api.objects.Message
 import org.telegram.telegrambots.meta.api.objects.Update
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton
 
+/**
+ * Process bot text messages, files, callbacks...
+ * */
 @Component
-class CommandProcessorImpl(private val musicService: CallbackMusicActions, private val captchaService: CaptchaService, private val messageSender: MessageSender) : CommandProcessor {
+class CommandProcessorImpl(val envConfiguration: EnvConfiguration, private val musicService: CallbackMusicActions, private val captchaService: CaptchaService,
+                           private val messageSender: MessageSender) : CommandProcessor {
     private val logger = LoggerFactory.getLogger(CommandProcessorImpl::class.java)
-    private var allowedUsers: List<String> = listOf()
 
+    /**
+     * Handle non-command request
+     * */
     override fun processNonCommand(update: Update, absSender: DefaultAbsSender) {
         if (update.hasCallbackQuery()) {
             val userId = update.callbackQuery.from.id
             val chatId = update.callbackQuery.message.chatId.toString()
             val callback = update.callbackQuery.data.decodeCallback()
             val keyboardList = update.callbackQuery.message.replyMarkup.keyboard
-            if (allowedUsers.contains(userId.toString())) {
+            if (envConfiguration.getAllowedUsers().contains(userId.toString())) {
                 processCallback(callback, userId, chatId, absSender, keyboardList)
             } else {
                 messageSender.sendCommandUnknown(chatId, absSender)
@@ -45,7 +52,7 @@ class CommandProcessorImpl(private val musicService: CallbackMusicActions, priva
      * */
     private fun processStringMsg(userId: Long, chatId: String, text: String, absSender: DefaultAbsSender) {
         try {
-            if (allowedUsers.contains(userId.toString())) {
+            if (envConfiguration.getAllowedUsers().contains(userId.toString())) {
                 val result = if (captchaService.containsKey(userId)) {
                     logger.info("Process captcha msg = {}", text)
                     val captchaResult = captchaService.get(userId)
@@ -76,10 +83,5 @@ class CommandProcessorImpl(private val musicService: CallbackMusicActions, priva
             is UnknownCallback -> ResultOf.Failure("None callback", ERROR_UNKNOWN_CALLBACK)
         }
         messageSender.sendMessage(userId, chatId, callbackResult, absSender)
-    }
-
-    init {
-        val getenv = System.getenv()
-        this.allowedUsers = getenv["ALLOWED_USERS"]?.split(",") ?: listOf()
     }
 }

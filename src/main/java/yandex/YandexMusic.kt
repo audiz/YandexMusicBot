@@ -1,15 +1,17 @@
 package yandex
 
 import en1.common.ResultOf
-import yandex.dto.ArtistSearchDTO
-import yandex.dto.DailyDTO
+import yandex.dto.*
 import yandex.dto.download.DownloadInfo
-import yandex.dto.SearchDTO
-import yandex.dto.TrackSearchDTO
 import yandex.dto.download.Storage
 import java.io.InputStream
 
 interface YandexMusic {
+
+    /**
+     * Return playlists generated for yandex user
+     * */
+    fun getPlaylists(): ResultOf<PlaylistsDTO>
     /**
      * Return daily playlist(60 track) for current yandex user
      * */

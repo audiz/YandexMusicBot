@@ -1,12 +1,10 @@
 package yandex
 
 import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.databind.node.ObjectNode
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import en1.common.ERROR_MSG_IN_YANDEX_JSON
-import en1.common.ERROR_YANDEX_REQUEST_FAILED
-import en1.common.ResultOf
-import en1.common.returnNok
+import en1.common.*
+import org.apache.http.client.config.CookieSpecs
+import org.apache.http.client.config.RequestConfig
 import org.apache.http.client.methods.HttpGet
 import org.apache.http.impl.client.CloseableHttpClient
 import org.apache.http.impl.client.HttpClients
@@ -20,42 +18,41 @@ import yandex.dto.download.DownloadInfo
 import yandex.dto.download.Storage
 import yandex.dto.download.XmlDownload
 import java.io.InputStream
-import java.net.URLDecoder
-import java.net.URLEncoder
+
 @Component
-class YandexMusicImpl: YandexMusic {
-    private val yandexCookie: String?
-    init {
-        val getenv = System.getenv()
-        yandexCookie = getenv!!["YANDEX_COOKIE"]
-    }
+class YandexMusicImpl(val envConfiguration: EnvConfiguration): YandexMusic {
     companion object {
         private val logger = LoggerFactory.getLogger(YandexMusicImpl::class.java)
-        val httpClient: CloseableHttpClient = HttpClients.createDefault()
+        private val requestConfig = RequestConfig.custom().setCookieSpec(CookieSpecs.STANDARD).build()
+        val httpClient: CloseableHttpClient = HttpClients.custom().setDefaultRequestConfig(requestConfig).build()
         val mapper = jacksonObjectMapper()
         init {
             mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
         }
     }
 
-    private fun getDailyPlaylistId(): ResultOf<String> {
+    private fun addStandardHeaders(request: HttpGet) {
+        request.addHeader("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:99.0) Gecko/20100101 Firefox/99.0")
+        request.addHeader("Accept", "application/json, text/javascript, */*; q=0.01")
+        request.addHeader("Accept-Language", "en-US,en;q=0.5")
+        request.addHeader("X-Requested-With", "XMLHttpRequest")
+        request.addHeader("Connection", "keep-alive")
+        request.addHeader("Sec-Fetch-Dest", "empty")
+        request.addHeader("Sec-Fetch-Mode", "cors")
+        request.addHeader("Sec-Fetch-Site", "same-origin")
+    }
+
+    override fun getPlaylists(): ResultOf<PlaylistsDTO> {
         var failureMsg = ""
         try {
-            failureMsg = "Request to /single-queue.jsx?action=get&lang=ru&external-domain="
-            val request = HttpGet("https://music.yandex.ru/handlers/single-queue.jsx?action=get&lang=ru&external-domain=")
-            request.addHeader("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:99.0) Gecko/20100101 Firefox/99.0")
-            request.addHeader("Accept", "application/json, text/javascript, */*; q=0.01")
-            request.addHeader("Accept-Language", "en-US,en;q=0.5")
-            request.addHeader("Referer", "https://music.yandex.ru/home?utm_source=main_stripe_big")
-            request.addHeader("X-Retpath-Y", "https://music.yandex.ru/home?utm_source=main_stripe_big")
-            request.addHeader("X-Requested-With", "XMLHttpRequest")
-            if (yandexCookie != null) {
-                request.addHeader("Cookie", yandexCookie)
+            failureMsg = "Request to /main.jsx?what=home&lang=ru&external-domain="
+            val request = HttpGet("https://music.yandex.ru/handlers/main.jsx?what=home&lang=ru&external-domain=")
+            request.addHeader("Referer", "https://music.yandex.ru/home")
+            request.addHeader("X-Retpath-Y", "https://music.yandex.ru/home")
+            if (envConfiguration.getYandexCookie() != null) {
+                request.addHeader("Cookie", envConfiguration.getYandexCookie())
             }
-            request.addHeader("Connection", "keep-alive")
-            request.addHeader("Sec-Fetch-Dest", "empty")
-            request.addHeader("Sec-Fetch-Mode", "cors")
-            request.addHeader("Sec-Fetch-Site", "same-origin")
+            addStandardHeaders(request)
 
             val response = httpClient.execute(request)
             val entity = response.entity
@@ -68,9 +65,11 @@ class YandexMusicImpl: YandexMusic {
                 return ResultOf.Captcha(captcha.captcha)
             }
 
-            val objNode = mapper.readValue(jsonString, ObjectNode::class.java)
-            return ResultOf.Success(objNode["queues"][0]["context"]["id"].textValue().substringAfter(":"))
+            //logger.info("jsonString = {}", jsonString)
+            val playlistsDTO = mapper.readValue(jsonString, PlaylistsDTO::class.java)
+            return ResultOf.Success(playlistsDTO)
         } catch (e: Throwable) {
+            e.printStackTrace()
             return ResultOf.Failure(failureMsg, ERROR_YANDEX_REQUEST_FAILED)
         }
     }
@@ -78,20 +77,16 @@ class YandexMusicImpl: YandexMusic {
     override fun dailyPlaylist(): ResultOf<DailyDTO> {
         var failureMsg = ""
         try {
-            val dailyIdResult = getDailyPlaylistId()
+            val dailyIdResult = getPlaylists()
             dailyIdResult.returnNok { return it }
-            val dailyId = (dailyIdResult as ResultOf.Success).value
+            val dailyPlaylists = (dailyIdResult as ResultOf.Success).value
+
+            val dailyId = dailyPlaylists.blocks.map { it.entities.find { it.data.data?.title == "Плейлист дня" } }.first()?.data?.data?.kind
+            //val dailyId = 153850731
 
             failureMsg = "Request to /playlist.jsx?owner=yamusic-daily"
             val request = HttpGet("https://music.yandex.ru/handlers/playlist.jsx?owner=yamusic-daily&kinds=${dailyId}&light=true&madeFor=&lang=ru&external-domain=")
-            request.addHeader("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:99.0) Gecko/20100101 Firefox/99.0")
-            request.addHeader("Accept", "application/json, text/javascript, */*; q=0.01")
-            request.addHeader("Accept-Language", "en-US,en;q=0.5")
-            request.addHeader("X-Requested-With", "XMLHttpRequest")
-            request.addHeader("Connection", "keep-alive")
-            request.addHeader("Sec-Fetch-Dest", "empty")
-            request.addHeader("Sec-Fetch-Mode", "cors")
-            request.addHeader("Sec-Fetch-Site", "same-origin")
+            addStandardHeaders(request)
 
             val response = httpClient.execute(request)
             val entity = response.entity
@@ -117,14 +112,7 @@ class YandexMusicImpl: YandexMusic {
         try {
             failureMsg = "Request to /music-search.jsx?text=$search"
             val request = HttpGet("https://music.yandex.ru/handlers/music-search.jsx?text=$search&type=all&clientNow=${System.currentTimeMillis()}&lang=ru&external-domain=")
-            request.addHeader("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:99.0) Gecko/20100101 Firefox/99.0")
-            request.addHeader("Accept", "application/json, text/javascript, */*; q=0.01")
-            request.addHeader("Accept-Language", "en-US,en;q=0.5")
-            request.addHeader("X-Requested-With", "XMLHttpRequest")
-            request.addHeader("Connection", "keep-alive")
-            request.addHeader("Sec-Fetch-Dest", "empty")
-            request.addHeader("Sec-Fetch-Mode", "cors")
-            request.addHeader("Sec-Fetch-Site", "same-origin")
+            addStandardHeaders(request)
 
             val response = httpClient.execute(request)
             val entity = response.entity
@@ -150,14 +138,7 @@ class YandexMusicImpl: YandexMusic {
         try {
             failureMsg = "Request to /music-search.jsx?text=$search&type=tracks"
             val request = HttpGet("https://music.yandex.ru/handlers/music-search.jsx?text=$search&type=tracks&page=$page&clientNow=${System.currentTimeMillis()}&lang=ru&external-domain=")
-            request.addHeader("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:99.0) Gecko/20100101 Firefox/99.0")
-            request.addHeader("Accept", "application/json, text/javascript, */*; q=0.01")
-            request.addHeader("Accept-Language", "en-US,en;q=0.5")
-            request.addHeader("X-Requested-With", "XMLHttpRequest")
-            request.addHeader("Connection", "keep-alive")
-            request.addHeader("Sec-Fetch-Dest", "empty")
-            request.addHeader("Sec-Fetch-Mode", "cors")
-            request.addHeader("Sec-Fetch-Site", "same-origin")
+            addStandardHeaders(request)
 
             val response = httpClient.execute(request)
             val entity = response.entity
@@ -183,14 +164,7 @@ class YandexMusicImpl: YandexMusic {
         try {
             failureMsg = "Request to /artist.jsx?artist=$artistId&what=tracks"
             val request = HttpGet("https://music.yandex.ru/handlers/artist.jsx?artist=$artistId&what=tracks&sort=&dir=&period=&lang=ru&external-domain=")
-            request.addHeader("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:99.0) Gecko/20100101 Firefox/99.0")
-            request.addHeader("Accept", "application/json, text/javascript, */*; q=0.01")
-            request.addHeader("Accept-Language", "en-US,en;q=0.5")
-            request.addHeader("X-Requested-With", "XMLHttpRequest")
-            request.addHeader("Connection", "keep-alive")
-            request.addHeader("Sec-Fetch-Dest", "empty")
-            request.addHeader("Sec-Fetch-Mode", "cors")
-            request.addHeader("Sec-Fetch-Site", "same-origin")
+            addStandardHeaders(request)
 
             val response = httpClient.execute(request)
             val entity = response.entity
@@ -217,14 +191,7 @@ class YandexMusicImpl: YandexMusic {
         try {
             failureMsg = "Request to /artist.jsx?artist=$id&lang=ru"
             val request = HttpGet("https://music.yandex.ru/handlers/artist.jsx?artist=$id&lang=ru&external-domain=")
-            request.addHeader("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:99.0) Gecko/20100101 Firefox/99.0")
-            request.addHeader("Accept", "application/json, text/javascript, */*; q=0.01")
-            request.addHeader("Accept-Language", "en-US,en;q=0.5")
-            request.addHeader("X-Requested-With", "XMLHttpRequest")
-            request.addHeader("Connection", "keep-alive")
-            request.addHeader("Sec-Fetch-Dest", "empty")
-            request.addHeader("Sec-Fetch-Mode", "cors")
-            request.addHeader("Sec-Fetch-Site", "same-origin")
+            addStandardHeaders(request)
 
             val response = httpClient.execute(request)
             val entity = response.entity
@@ -264,17 +231,9 @@ class YandexMusicImpl: YandexMusic {
             failureMsg = "Request to /artist.jsx?artist=$artistId&what=similar"
 
             val request = HttpGet("https://music.yandex.ru/handlers/artist.jsx?artist=$artistId&what=similar")
-            request.addHeader("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:99.0) Gecko/20100101 Firefox/99.0")
-            request.addHeader("Accept", "application/json, text/javascript, */*; q=0.01")
-            request.addHeader("Accept-Language", "en-US,en;q=0.5")
             request.addHeader("Referer", "https://music.yandex.ru/artist/$artistId/similar")
-            //request.addHeader("X-Current-UID", "23858391")
             request.addHeader("X-Retpath-Y", "https://music.yandex.ru/artist/$artistId/similar")
-            request.addHeader("X-Requested-With", "XMLHttpRequest")
-            request.addHeader("Connection", "keep-alive")
-            request.addHeader("Sec-Fetch-Dest", "empty")
-            request.addHeader("Sec-Fetch-Mode", "cors")
-            request.addHeader("Sec-Fetch-Site", "same-origin")
+            addStandardHeaders(request)
 
             val response = httpClient.execute(request)
             val entity = response.entity
@@ -302,21 +261,13 @@ class YandexMusicImpl: YandexMusic {
         try {
             failureMsg = "Request to /api/v2.1/handlers/track/$trackId:$artistId/"
             val request = HttpGet("https://music.yandex.ru/api/v2.1/handlers/track/$trackId:$artistId/web-search-track-track-saved/download/m?hq=0&external-domain=")
-            request.addHeader("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:99.0) Gecko/20100101 Firefox/99.0")
-            request.addHeader("Accept", "application/json; q=1.0, text/*; q=0.8, */*; q=0.1")
-            request.addHeader("Accept-Language", "en-US,en;q=0.5")
             request.addHeader("Referer", "https://music.yandex.ru/artist/$artistId/tracks")
             request.addHeader("X-Retpath-Y", "https%3A%2F%2Fmusic.yandex.ru%2Fartist%2F$artistId%2Ftracks")
             request.addHeader("X-Yandex-Music-Client", "YandexMusicAPI")
-            //request.addHeader("X-Current-UID", "23858391")
-            request.addHeader("X-Requested-With", "XMLHttpRequest")
-            request.addHeader("Connection", "keep-alive")
-            if (yandexCookie != null) {
-                request.addHeader("Cookie", yandexCookie)
+            if (envConfiguration.getYandexCookie() != null) {
+                request.addHeader("Cookie", envConfiguration.getYandexCookie())
             }
-            request.addHeader("Sec-Fetch-Dest", "empty")
-            request.addHeader("Sec-Fetch-Mode", "cors")
-            request.addHeader("Sec-Fetch-Site", "same-origin")
+            addStandardHeaders(request)
 
             val response = httpClient.execute(request)
             val entity = response.entity
@@ -390,24 +341,6 @@ class YandexMusicImpl: YandexMusic {
             return ResultOf.Failure(failureMsg, ERROR_YANDEX_REQUEST_FAILED)
         }
     }
-
-    private fun handleCaptcha(jsonString: String) {
-        // can be captcha type
-        val captcha = mapper.readValue(jsonString, CaptchaDTO::class.java)
-        logger.info("captcha = {}", captcha)
-        val captchaImgUrl = captcha.captcha.imgUrl
-        val retpath = captcha.captcha.captchaPage.substringAfter("retpath=").substringBefore("&")
-        val u = captcha.captcha.captchaPage.substringAfter("u=").substringBefore("&")
-        val captchaKey = captcha.captcha.key.urlEncode()
-
-        val answer = "captcha answer".urlEncode()
-        val sendUrl = "https://music.yandex.ru/checkcaptcha?key=$captchaKey&retpath=$retpath&u=$u&rep=$answer"
-
-        logger.info("sendUrl = {}", sendUrl)
-    }
-
-    fun String.urlEncode(): String = URLEncoder.encode(this, java.nio.charset.StandardCharsets.UTF_8.toString())
-    fun String.urlDecode(): String = URLDecoder.decode(this, java.nio.charset.StandardCharsets.UTF_8.toString())
 }
 
 /**
