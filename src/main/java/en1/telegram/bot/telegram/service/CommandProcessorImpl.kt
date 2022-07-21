@@ -80,6 +80,7 @@ class CommandProcessorImpl(val envConfiguration: EnvConfiguration, private val m
             is SearchTrackWithPagesCallback -> musicService.searchWithPagesMsg(userId, chatId, callback)
             is ArtistTrackWithPagesCallback -> musicService.artistWithPagesMsg(userId, chatId, callback)
             is SimilarCallback -> musicService.similarMsg(userId, chatId, callback)
+            is PlaylistCallback -> musicService.playlist(chatId, callback)
             is UnknownCallback -> ResultOf.Failure("None callback", ERROR_UNKNOWN_CALLBACK)
         }
         messageSender.sendMessage(userId, chatId, callbackResult, absSender)

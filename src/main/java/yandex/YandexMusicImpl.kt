@@ -48,7 +48,7 @@ class YandexMusicImpl(val envConfiguration: EnvConfiguration): YandexMusic {
 
             val url = "https://music.yandex.ru/handlers/main.jsx?what=home&lang=ru&external-domain="
             val jsonString = httpGet(url, headers) { return it }
-            logger.info("jsonString = {}", jsonString)
+            //logger.info("jsonString = {}", jsonString)
             val playlistsDTO = mapper.readValue(jsonString, PlaylistsDTO::class.java)
             return ResultOf.Success(playlistsDTO)
         } catch (e: Throwable) {
@@ -57,9 +57,9 @@ class YandexMusicImpl(val envConfiguration: EnvConfiguration): YandexMusic {
         }
     }
 
-    override fun getPlaylist(playlistId: Long): ResultOf<DailyDTO> {
+    override fun getPlaylist(playlistId: Long, owner: String): ResultOf<DailyDTO> {
         try {
-            val url = "https://music.yandex.ru/handlers/playlist.jsx?owner=yamusic-daily&kinds=${playlistId}&light=true&madeFor=&lang=ru&external-domain="
+            val url = "https://music.yandex.ru/handlers/playlist.jsx?owner=$owner&kinds=$playlistId&light=true&madeFor=&lang=ru&external-domain="
             val jsonString = httpGet(url) { return it }
             val searchData = mapper.readValue(jsonString, DailyDTO::class.java)
             //println(searchData)

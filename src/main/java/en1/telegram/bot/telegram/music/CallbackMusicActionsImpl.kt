@@ -28,20 +28,54 @@ class CallbackMusicActionsImpl(val yandexMusic: YandexMusic) : CallbackMusicActi
     private val logger = LoggerFactory.getLogger(CallbackMusicActionsImpl::class.java)
 
     /**
-     * Show playlists
+     * Show personal playlists for yandex user
      * */
-    override fun getPlaylists(chatId: String): ResultOf<SendMessage> {
+    override fun getPersonalPlaylists(chatId: String): ResultOf<SendMessage> {
         val dailyIdResult = yandexMusic.getPlaylists()
         dailyIdResult.returnNok { return it }
         val dailyPlaylists = (dailyIdResult as ResultOf.Success).value
-        val playlists = dailyPlaylists.blocks.flatMap {
-            blocks -> blocks.entities.map {
-                it.data.data?.title
-            }
+        val playlists = dailyPlaylists.blocks
+            .filter { it.type == "personal-playlists" }
+            .flatMap { blocks -> blocks.entities.map { Triple(it.data.data?.title, it.data.data?.kind, it.data.data?.owner?.login) }
         }
+
+        val rowList: MutableList<List<InlineKeyboardButton>> = ArrayList()
+
+        playlists.forEach {
+            val inlineKeyboardButton1 = InlineKeyboardButton()
+            inlineKeyboardButton1.text = it.first!!
+            inlineKeyboardButton1.callbackData = PlaylistCallback(it.second!!, it.third!!).encode()
+            val keyboardButtonsRow1: MutableList<InlineKeyboardButton> = ArrayList()
+            keyboardButtonsRow1.add(inlineKeyboardButton1)
+            rowList.add(keyboardButtonsRow1)
+        }
+
+        val inlineKeyboardMarkup = InlineKeyboardMarkup()
+        inlineKeyboardMarkup.keyboard = rowList
+
         val answer = SendMessage()
-        answer.text = "Playlists ${playlists}"
+        answer.text = "Personal Playlists"
         answer.chatId = chatId
+        answer.replyMarkup = inlineKeyboardMarkup
+
+        return ResultOf.Success(answer)
+    }
+
+    override fun playlist(chatId: String, callback: PlaylistCallback): ResultOf<SendMessage> {
+        val playlistResult = yandexMusic.getPlaylist(callback.kind, callback.owner)
+        playlistResult.returnNok { return it }
+        val playlist = (playlistResult as ResultOf.Success).value
+
+        val rowList: MutableList<List<InlineKeyboardButton>> = ArrayList()
+        createTrackButtons(playlist.playlist.tracks.take(60), rowList, "")
+
+        val inlineKeyboardMarkup = InlineKeyboardMarkup()
+        inlineKeyboardMarkup.keyboard = rowList
+        val answer = SendMessage()
+        answer.text = "Playlist tracks count for user is ${playlist.playlist.tracks.size}"
+        answer.chatId = chatId
+        answer.replyMarkup = inlineKeyboardMarkup
+
         return ResultOf.Success(answer)
     }
 
@@ -52,10 +86,11 @@ class CallbackMusicActionsImpl(val yandexMusic: YandexMusic) : CallbackMusicActi
         val dailyIdResult = yandexMusic.getPlaylists()
         dailyIdResult.returnNok { return it }
         val dailyPlaylists = (dailyIdResult as ResultOf.Success).value
-        val playlistId = dailyPlaylists.blocks.map { blocks -> blocks.entities.find { it.data.data?.title == "Плейлист дня" } }.first()?.data?.data?.kind!!
+        val (playlistId, owner) = dailyPlaylists.blocks.map { blocks -> blocks.entities.find { it.data.data?.title == "Плейлист дня" } }
+            .first()?.let { return@let Pair(it.data.data?.kind, it.data.data?.owner?.login) } ?: Pair(null, null)
         //val playlistId = 153850731
 
-        val dailyPlaylist = yandexMusic.getPlaylist(playlistId)
+        val dailyPlaylist = yandexMusic.getPlaylist(playlistId!!, owner!!)
         dailyPlaylist.returnNok { return it }
         val dailyList = (dailyPlaylist as ResultOf.Success).value
 

@@ -1,10 +1,7 @@
 package en1.telegram.bot.telegram.music
 
 import en1.common.ResultOf
-import en1.telegram.bot.telegram.callback.ArtistTrackWithPagesCallback
-import en1.telegram.bot.telegram.callback.SearchTrackWithPagesCallback
-import en1.telegram.bot.telegram.callback.SimilarCallback
-import en1.telegram.bot.telegram.callback.TrackCallback
+import en1.telegram.bot.telegram.callback.*
 import org.telegram.telegrambots.meta.api.methods.send.SendDocument
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton
@@ -15,14 +12,16 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKe
 interface CallbackMusicActions {
 
     /**
-     * Show playlists
+     * Show personal playlists for yandex user
      * */
-    fun getPlaylists(chatId: String): ResultOf<SendMessage>
+    fun getPersonalPlaylists(chatId: String): ResultOf<SendMessage>
 
     /**
      * Return a daily playlist for the current yandex music
      * */
     fun dailyPlaylist(chatId: String): ResultOf<SendMessage>
+
+    fun playlist(chatId: String, callback: PlaylistCallback): ResultOf<SendMessage>
 
     /**
      * Find music information for search request and show to user

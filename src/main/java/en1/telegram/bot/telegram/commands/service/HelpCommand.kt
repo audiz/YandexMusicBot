@@ -2,6 +2,7 @@ package en1.telegram.bot.telegram.commands.service
 
 import en1.telegram.bot.utils.Utils
 import org.slf4j.LoggerFactory
+import org.springframework.stereotype.Component
 import org.telegram.telegrambots.meta.api.objects.Chat
 import org.telegram.telegrambots.meta.api.objects.User
 import org.telegram.telegrambots.meta.bots.AbsSender
@@ -9,7 +10,8 @@ import org.telegram.telegrambots.meta.bots.AbsSender
 /**
  * Команда "Помощь"
  */
-class HelpCommand(identifier: String?, description: String?) : ServiceCommand(identifier, description) {
+@Component
+class HelpCommand : ServiceCommand("help", "Помощь") {
     private val logger = LoggerFactory.getLogger(HelpCommand::class.java)
     override fun execute(absSender: AbsSender, user: User, chat: Chat, strings: Array<String>) {
         val userName: String = Utils.getUserName(user)

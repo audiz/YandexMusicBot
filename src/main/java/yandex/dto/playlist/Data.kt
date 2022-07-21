@@ -4,5 +4,6 @@ data class Data(
     val kind: Long,
     val title: String,
     val description: String,
-    val trackCount: String
+    val trackCount: String,
+    val owner: Owner
     )

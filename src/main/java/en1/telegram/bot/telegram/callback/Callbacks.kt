@@ -67,6 +67,20 @@ data class SimilarCallback(val artistId: Int) : Callback() {
     }
 }
 
+/**
+ * Playlist
+ * */
+data class PlaylistCallback(val kind: Long, val owner: String): Callback() {
+    companion object {
+        const val identifier: Byte = 6
+    }
+
+    override fun encode(): String {
+        return generateStringFromData(identifier, null, "$kind:$owner", null)
+    }
+}
+
+
 object UnknownCallback: Callbacks
 
 /**
@@ -121,6 +135,7 @@ fun String.decodeCallback() : Callbacks {
         SearchTrackWithPagesCallback.identifier -> SearchTrackWithPagesCallback(intArr[0], searchString)
         ArtistTrackWithPagesCallback.identifier -> ArtistTrackWithPagesCallback(intArr[0], intArr[1], searchString)
         SimilarCallback.identifier -> SimilarCallback(intArr[0])
+        PlaylistCallback.identifier -> PlaylistCallback(textData.substringBefore(":").toLong(), textData.substringAfter(":"))
         else -> UnknownCallback
     }
 }

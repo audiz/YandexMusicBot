@@ -4,6 +4,7 @@ import en1.telegram.bot.telegram.music.CallbackMusicActions
 import en1.telegram.bot.telegram.service.MessageSender
 import en1.telegram.bot.utils.Utils
 import org.slf4j.LoggerFactory
+import org.springframework.stereotype.Component
 import org.telegram.telegrambots.extensions.bots.commandbot.commands.BotCommand
 import org.telegram.telegrambots.meta.api.objects.Chat
 import org.telegram.telegrambots.meta.api.objects.User
@@ -12,8 +13,9 @@ import org.telegram.telegrambots.meta.bots.AbsSender
 /**
  * Daily playlist command
  */
-class DailyPlaylistCommand(identifier: String?, description: String?, private val musicService: CallbackMusicActions,
-                           private val messageSender: MessageSender) : BotCommand(identifier, description) {
+@Component
+class DailyPlaylistCommand(private val musicService: CallbackMusicActions,
+                           private val messageSender: MessageSender) : BotCommand("daily", "Daily playlist") {
     private val logger = LoggerFactory.getLogger(DailyPlaylistCommand::class.java)
 
     override fun execute(absSender: AbsSender, user: User, chat: Chat, strings: Array<String>) {
