@@ -36,4 +36,9 @@ interface MessageSender {
      * Transform garmin FIT file to GPX and send to user
      * */
     fun sendFitDoc(msg: Message, update: Update, absSender: DefaultAbsSender)
+
+    /**
+     * Send command is locked by double execution
+     * */
+    fun sendCommandLocked(chatId: String, absSender: DefaultAbsSender)
 }

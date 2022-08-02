@@ -11,6 +11,7 @@ import org.telegram.telegrambots.bots.DefaultAbsSender
 import org.telegram.telegrambots.meta.api.objects.Message
 import org.telegram.telegrambots.meta.api.objects.Update
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Process bot text messages, files, callbacks...
@@ -19,14 +20,21 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKe
 class CommandProcessorImpl(val envConfiguration: EnvConfiguration, private val musicService: CallbackMusicActions, private val captchaService: CaptchaService,
                            private val messageSender: MessageSender) : CommandProcessor {
     private val logger = LoggerFactory.getLogger(CommandProcessorImpl::class.java)
+    // TODO improve double executions
+    private val lockDoubleCallbacks = ConcurrentHashMap<Long, String>()
 
     /**
      * Handle non-command request
      * */
     override fun processNonCommand(update: Update, absSender: DefaultAbsSender) {
+        val (userId, chatId) = getUserAndChatId(update)
         if (update.hasCallbackQuery()) {
-            val userId = update.callbackQuery.from.id
-            val chatId = update.callbackQuery.message.chatId.toString()
+            if (lockDoubleCallbacks.containsKey(userId) && (lockDoubleCallbacks[userId] == update.callbackQuery.data)) {
+                messageSender.sendCommandLocked(chatId, absSender)
+                return
+            }
+            lockDoubleCallbacks[userId] = update.callbackQuery.data
+
             val callback = update.callbackQuery.data.decodeCallback()
             val keyboardList = update.callbackQuery.message.replyMarkup.keyboard
             if (envConfiguration.getAllowedUsers().contains(userId.toString())) {
@@ -36,14 +44,32 @@ class CommandProcessorImpl(val envConfiguration: EnvConfiguration, private val m
             }
         } else {
             val msg: Message = update.message ?: update.editedMessage
-            val userId = msg.from.id
-            val chatId = msg.chatId.toString()
-
             if (msg.hasDocument() && msg.document.fileName.lowercase().endsWith(".fit")) {
                 messageSender.sendFitDoc(msg, update, absSender)
             } else {
                 processStringMsg(userId, chatId, msg.text, absSender)
             }
+        }
+
+
+
+
+
+    }
+
+    /**
+     * Must be refactored
+     * */
+    private fun getUserAndChatId(update: Update): Pair<Long, String> {
+        if (update.hasCallbackQuery()) {
+            val userId = update.callbackQuery.from.id
+            val chatId = update.callbackQuery.message.chatId.toString()
+            return Pair(userId, chatId)
+        } else {
+            val msg: Message = update.message ?: update.editedMessage
+            val userId = msg.from.id
+            val chatId = msg.chatId.toString()
+            return Pair(userId, chatId)
         }
     }
 

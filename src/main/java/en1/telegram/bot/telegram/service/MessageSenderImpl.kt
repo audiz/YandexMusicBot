@@ -139,4 +139,17 @@ class MessageSenderImpl(private val captchaService: CaptchaService, val fitToGpx
         }
     }
 
+    /**
+     * Send command is locked by double execution
+     * */
+    override fun sendCommandLocked(chatId: String, absSender: DefaultAbsSender) {
+        try {
+            val sendMessage = SendMessage()
+            sendMessage.chatId = chatId
+            sendMessage.text = "The command is locked by double execution"
+            absSender.execute(sendMessage)
+        } catch (e: Exception) {
+            logger.error("sendCommandUnknown exception: {}", e.stackTraceToString())
+        }
+    }
 }

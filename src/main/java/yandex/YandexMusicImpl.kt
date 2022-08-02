@@ -60,7 +60,14 @@ class YandexMusicImpl(val envConfiguration: EnvConfiguration): YandexMusic {
     override fun getPlaylist(playlistId: Long, owner: String): ResultOf<DailyDTO> {
         try {
             val url = "https://music.yandex.ru/handlers/playlist.jsx?owner=$owner&kinds=$playlistId&light=true&madeFor=&lang=ru&external-domain="
-            val jsonString = httpGet(url) { return it }
+            val headers = mutableMapOf(
+                "X-Current-UID" to "23858391",
+                "Referer" to "https://music.yandex.ru/home",
+                "X-Retpath-Y" to "https://music.yandex.ru/home"
+            )
+            envConfiguration.getYandexCookie()?.let { headers["Cookie"] = it }
+
+            val jsonString = httpGet(url, headers) { return it }
             val searchData = mapper.readValue(jsonString, DailyDTO::class.java)
             //println(searchData)
             return ResultOf.Success(searchData)

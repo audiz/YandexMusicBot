@@ -146,7 +146,7 @@ class CallbackMusicActionsImpl(val yandexMusic: YandexMusic) : CallbackMusicActi
         val artistSearch = (searchResult as ResultOf.Success).value
         val rowList: MutableList<List<InlineKeyboardButton>> = ArrayList()
 
-        createTrackButtons(artistSearch.tracks.drop((page - 1) * TRACKS_PER_PAGE).take(TRACKS_PER_PAGE), rowList, callback.searchString, artistSearch.artist.name)
+        createTrackButtons(artistSearch.tracks.drop((page - 1) * TRACKS_PER_PAGE).take(TRACKS_PER_PAGE), rowList, callback.searchString)
         rowList.add(pagesButtonsRow(artistSearch.tracks.size, page, callback.searchString, callback.artistId))
         rowList.add(artistButtonsRow(artistSearch.similar.take(3), callback.searchString))
         if (artistSearch.similar.isNotEmpty()) {
@@ -178,7 +178,11 @@ class CallbackMusicActionsImpl(val yandexMusic: YandexMusic) : CallbackMusicActi
         val rowList: MutableList<List<InlineKeyboardButton>> = ArrayList()
         val total = if (search.tracks.total > 200) 200 else search.tracks.total
 
-        createTrackButtons(search.tracks.items.drop(((page - 1) % TRACKS_PER_PAGE) * TRACKS_PER_PAGE).take(TRACKS_PER_PAGE), rowList, callback.searchString)
+        createTrackButtons(
+            search.tracks.items.drop(((page - 1) % TRACKS_PER_PAGE) * TRACKS_PER_PAGE).take(TRACKS_PER_PAGE),
+            rowList,
+            callback.searchString
+        )
         rowList.add(pagesButtonsRow(total, page, callback.searchString))
 
         val inlineKeyboardMarkup = InlineKeyboardMarkup()
@@ -260,17 +264,15 @@ class CallbackMusicActionsImpl(val yandexMusic: YandexMusic) : CallbackMusicActi
     /**
      * Print callback buttons with tracks to download
      * */
-    private fun createTrackButtons(trackList: List<TrackItem>, rowList: MutableList<List<InlineKeyboardButton>>, searchText: String, artistName: String? = null) {
+    private fun createTrackButtons(trackList: List<TrackItem>, rowList: MutableList<List<InlineKeyboardButton>>, searchText: String) {
         trackList.map { track ->
             val inlineKeyboardButton1 = InlineKeyboardButton()
             val millis = track.durationMs.toLong()
             val duration = String.format("(%d:%02d)", TimeUnit.MILLISECONDS.toMinutes(millis),
                 TimeUnit.MILLISECONDS.toSeconds(millis) - TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(millis)))
 
-            val trackName = artistName
-                ?.let { "${track.title} - $artistName" }
-                ?: track.artists.getOrNull(0)?.name
-                ?.let { "${track.title} - $it" } ?: track.title
+            val artists = track.artists.joinToString(separator = ", ") { it.name }
+            val trackName = "${track.title} - $artists"
 
             inlineKeyboardButton1.text = "$trackName $duration"
             inlineKeyboardButton1.callbackData = TrackCallback(track.id, track.albums[0].id, searchText).encode()
