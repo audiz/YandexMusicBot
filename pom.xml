@@ -9,10 +9,10 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>en-1.telegram</groupId>
-	<artifactId>FitToGpxBot</artifactId>
+	<artifactId>YandexMusicBot</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>FitToGpxBot</name>
-	<description>Demo project for Spring Boot</description>
+	<name>YandexMusicBot</name>
+	<description>Allow to search and download mp3 tracks from yandex music.</description>
 
 	<properties>
 		<java.version>1.8</java.version>

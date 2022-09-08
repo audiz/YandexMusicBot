@@ -50,11 +50,6 @@ class CommandProcessorImpl(val envConfiguration: EnvConfiguration, private val m
                 processStringMsg(userId, chatId, msg.text, absSender)
             }
         }
-
-
-
-
-
     }
 
     /**

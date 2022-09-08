@@ -1,1 +1,1 @@
-worker: java $JAVA_OPTS -jar target/FitToGpxBot-0.0.1-SNAPSHOT.jar
+worker: java $JAVA_OPTS -jar target/YandexMusicBot-0.0.1-SNAPSHOT.jar
