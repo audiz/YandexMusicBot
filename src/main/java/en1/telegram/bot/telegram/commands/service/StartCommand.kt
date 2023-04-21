@@ -18,7 +18,7 @@ class StartCommand : ServiceCommand("start", "Начало") {
         logger.info("Пользователь {} ({}). Начато выполнение команды {}", userName, user.id, commandIdentifier)
         sendAnswer(absSender, chat.id, commandIdentifier, userName,
                 """
-                    Hello, I'am a bot that can convert a Garmin FIT file to GPX
+                    Hello, I'am a bot that can find and download mp3 from yandex music
                   
                     ❗*List of the commands*
                     /test - test command

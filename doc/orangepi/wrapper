@@ -1,0 +1,17 @@
+#!/bin/bash
+
+export ALLOWED_USERS=CUTCUTCUT
+export BOT_NAME=CUTCUTCUT_bot
+export BOT_TOKEN=CUTCUTCUT
+
+source yandex_cookies.env
+export YANDEX_COOKIE
+#export YANDEX_COOKIE="Session_id=CUTCUTCUT"
+#JAVA_HOME=/path/to/jvmdir
+WORKDIR=/home/orangepi
+#JAVA_OPTIONS=" -Xms128m -Xmx256m -server "
+#APP_OPTIONS=" -c /path/to/app.config -d /path/to/datadir "
+
+cd $WORKDIR
+#/usr/bin/java -jar FitToGpxBot-0.0.1-SNAPSHOT.jar -server
+setsid /usr/bin/java -jar FitToGpxBot-0.0.1-SNAPSHOT.jar >/dev/null 2>&1 < /dev/null 

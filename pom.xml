@@ -18,7 +18,7 @@
 		<java.version>1.8</java.version>
 		<kotlin.version>1.5.31</kotlin.version>
 		<apache.poi.version>4.1.2</apache.poi.version>
-		<telegram.version>6.0.1</telegram.version>
+		<telegram.version>6.5.0</telegram.version>
 		<spring.boot.mainclass>en1.telegram.bot.BotApplicationKt</spring.boot.mainclass>
 	</properties>
 

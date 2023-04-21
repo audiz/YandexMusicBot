@@ -1,0 +1,17 @@
+[Unit]
+Description=My Java forking service
+After=syslog.target network.target
+
+[Service]
+TimeoutStartSec=300
+SuccessExitStatus=143
+User=orangepi
+Group=orangepi
+
+Type=forking
+
+ExecStart=/home/orangepi/wrapper
+ExecStop=/bin/kill -15 $MAINPID
+
+[Install]
+WantedBy=multi-user.target

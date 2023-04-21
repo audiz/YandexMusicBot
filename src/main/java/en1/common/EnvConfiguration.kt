@@ -2,7 +2,6 @@ package en1.common
 
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Configuration
-import kotlin.system.exitProcess
 
 /**
  * Read system environment variables such as BOT name and token. The list of allowed users(to use bot) and yandex cookies(Session_id)
@@ -11,7 +10,7 @@ import kotlin.system.exitProcess
 class EnvConfiguration {
     private val logger = LoggerFactory.getLogger(EnvConfiguration::class.java)
 
-    private val yandexCookie: String?
+    private var yandexCookie: String? = null
     private val botUsername: String
     private val botToken: String
     private var allowedUsers: List<String> = listOf()
@@ -21,7 +20,7 @@ class EnvConfiguration {
         yandexCookie = getenv!!["YANDEX_COOKIE"]
         if (!getenv.containsKey("BOT_NAME") || !getenv.containsKey("BOT_TOKEN")) {
             logger.error("Environment variables BOT_NAME and BOT_TOKEN must exist")
-            exitProcess(1)
+            Runtime.getRuntime().halt(1)
         }
         botUsername = getenv["BOT_NAME"]!!
         botToken = getenv["BOT_TOKEN"]!!
@@ -43,4 +42,9 @@ class EnvConfiguration {
     fun getYandexCookie(): String? {
         return yandexCookie
     }
+
+    fun setYandexCookie(yandexCookie: String) {
+        this.yandexCookie = yandexCookie
+    }
+
 }

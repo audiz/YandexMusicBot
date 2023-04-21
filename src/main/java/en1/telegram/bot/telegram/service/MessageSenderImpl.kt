@@ -1,5 +1,6 @@
 package en1.telegram.bot.telegram.service
 
+import en1.common.ERRORS_MAP
 import en1.common.ResultOf
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -33,7 +34,7 @@ class MessageSenderImpl(private val captchaService: CaptchaService, val fitToGpx
             }
             is ResultOf.Failure -> {
                 logger.error("Failure msg = ${result.message}, code = ${result.code}")
-                sendCommandFailure(absSender, chatId, "Bot failed with code '${result.code}'")
+                sendCommandFailure(absSender, chatId, "Bot failed with code '${result.code}' ${ERRORS_MAP[result.code]}")
             }
             is ResultOf.Captcha -> showCaptcha(absSender, userId, chatId, result)
         }
