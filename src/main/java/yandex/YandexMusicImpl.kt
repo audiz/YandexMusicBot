@@ -49,8 +49,12 @@ class YandexMusicImpl(val envConfiguration: EnvConfiguration): YandexMusic {
             val url = "https://music.yandex.ru/handlers/main.jsx?what=home&lang=ru&external-domain="
             val jsonString = httpGet(url, headers) { return it }
             //logger.info("jsonString = {}", jsonString)
-            val playlistsDTO = mapper.readValue(jsonString, PlaylistsDTO::class.java)
-            return ResultOf.Success(playlistsDTO)
+            try {
+                val playlistsDTO = mapper.readValue(jsonString, PlaylistsDTO::class.java)
+                return ResultOf.Success(playlistsDTO)
+            } catch (e: Exception) {
+                return ResultOf.Failure(e.message!!, ERROR_YANDEX_JSON_PARSE_FAILED)
+            }
         } catch (e: Throwable) {
             e.printStackTrace()
             return ResultOf.Failure(e.message!!, ERROR_YANDEX_REQUEST_FAILED)

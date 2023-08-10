@@ -23,6 +23,7 @@ class HelpCommand : ServiceCommand("help", "Помощь") {
                     ❗*List of the commands*
                     /test - test command
                     /help - help information
+                    /login - update yandex login
                     
                     Good Luck🙂
                     """.trimIndent())
