@@ -3,6 +3,8 @@ package yandex
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import en1.common.*
+import en1.telegram.bot.telegram.exceptions.ErrorBuilder
+import en1.telegram.bot.telegram.exceptions.ErrorKind
 import org.apache.http.client.config.CookieSpecs
 import org.apache.http.client.config.RequestConfig
 import org.apache.http.client.methods.HttpGet
@@ -53,11 +55,12 @@ class YandexMusicImpl(val envConfiguration: EnvConfiguration): YandexMusic {
                 val playlistsDTO = mapper.readValue(jsonString, PlaylistsDTO::class.java)
                 return ResultOf.Success(playlistsDTO)
             } catch (e: Exception) {
-                return ResultOf.Failure(e.message!!, ERROR_YANDEX_JSON_PARSE_FAILED)
+                return ResultOf.Failure(ErrorBuilder.newBuilder(ErrorKind.YANDEX_PLAYLIST_PARSE).withCode(400)
+                    .withDescription("Failed to parse playlist, check you authorization"))
             }
         } catch (e: Throwable) {
             e.printStackTrace()
-            return ResultOf.Failure(e.message!!, ERROR_YANDEX_REQUEST_FAILED)
+            return ResultOf.Failure(ErrorBuilder.newBuilder(ErrorKind.YANDEX_REQUEST_FAILED).withCode(500).withDescription(e.message))
         }
     }
 
@@ -77,7 +80,7 @@ class YandexMusicImpl(val envConfiguration: EnvConfiguration): YandexMusic {
             return ResultOf.Success(searchData)
         } catch (e: Throwable) {
             e.printStackTrace()
-            return ResultOf.Failure(e.message!!, ERROR_YANDEX_REQUEST_FAILED)
+            return ResultOf.Failure(ErrorBuilder.newBuilder(ErrorKind.YANDEX_REQUEST_FAILED).withCode(500).withDescription(e.message))
         }
     }
 
@@ -89,7 +92,7 @@ class YandexMusicImpl(val envConfiguration: EnvConfiguration): YandexMusic {
             return ResultOf.Success(searchData)
         } catch (e: Throwable) {
             e.printStackTrace()
-            return ResultOf.Failure(e.message!!, ERROR_YANDEX_REQUEST_FAILED)
+            return ResultOf.Failure(ErrorBuilder.newBuilder(ErrorKind.YANDEX_REQUEST_FAILED).withCode(500).withDescription(e.message))
         }
     }
 
@@ -102,7 +105,7 @@ class YandexMusicImpl(val envConfiguration: EnvConfiguration): YandexMusic {
             return ResultOf.Success(searchData)
         } catch (e: Throwable) {
             e.printStackTrace()
-            return ResultOf.Failure(e.message!!, ERROR_YANDEX_REQUEST_FAILED)
+            return ResultOf.Failure(ErrorBuilder.newBuilder(ErrorKind.YANDEX_REQUEST_FAILED).withCode(500).withDescription(e.message))
         }
     }
 
@@ -115,7 +118,7 @@ class YandexMusicImpl(val envConfiguration: EnvConfiguration): YandexMusic {
             return ResultOf.Success(searchData)
         } catch (e: Throwable) {
             e.printStackTrace()
-            return ResultOf.Failure(e.message!!, ERROR_YANDEX_REQUEST_FAILED)
+            return ResultOf.Failure(ErrorBuilder.newBuilder(ErrorKind.YANDEX_REQUEST_FAILED).withCode(500).withDescription(e.message))
         }
     }
 
@@ -128,7 +131,7 @@ class YandexMusicImpl(val envConfiguration: EnvConfiguration): YandexMusic {
             return ResultOf.Success(artistData)
         } catch (e: Throwable) {
             e.printStackTrace()
-            return ResultOf.Failure(e.message!!, ERROR_YANDEX_REQUEST_FAILED)
+            return ResultOf.Failure(ErrorBuilder.newBuilder(ErrorKind.YANDEX_REQUEST_FAILED).withCode(500).withDescription(e.message))
         }
     }
 
@@ -156,7 +159,7 @@ class YandexMusicImpl(val envConfiguration: EnvConfiguration): YandexMusic {
             return ResultOf.Success(artistData)
         } catch (e: Throwable) {
             e.printStackTrace()
-            return ResultOf.Failure(e.message!!, ERROR_YANDEX_REQUEST_FAILED)
+            return ResultOf.Failure(ErrorBuilder.newBuilder(ErrorKind.YANDEX_REQUEST_FAILED).withCode(500).withDescription(e.message))
         }
     }
 
@@ -176,7 +179,7 @@ class YandexMusicImpl(val envConfiguration: EnvConfiguration): YandexMusic {
             return ResultOf.Success(storageData)
         } catch (e: Throwable) {
             e.printStackTrace()
-            return ResultOf.Failure(e.message!!, ERROR_YANDEX_REQUEST_FAILED)
+            return ResultOf.Failure(ErrorBuilder.newBuilder(ErrorKind.YANDEX_REQUEST_FAILED).withCode(500).withDescription(e.message))
         }
     }
 
@@ -199,7 +202,7 @@ class YandexMusicImpl(val envConfiguration: EnvConfiguration): YandexMusic {
             return ResultOf.Success(xmlDownloadDTO.downloadInfo)
         } catch (e: Throwable) {
             e.printStackTrace()
-            return ResultOf.Failure(e.message!!, ERROR_YANDEX_REQUEST_FAILED)
+            return ResultOf.Failure(ErrorBuilder.newBuilder(ErrorKind.YANDEX_REQUEST_FAILED).withCode(500).withDescription(e.message))
         }
     }
 
@@ -222,7 +225,7 @@ class YandexMusicImpl(val envConfiguration: EnvConfiguration): YandexMusic {
 
             return ResultOf.Success(httpClient.execute(request).entity.content)
         } catch (e: Throwable) {
-            return ResultOf.Failure(failureMsg, ERROR_YANDEX_REQUEST_FAILED)
+            return ResultOf.Failure(ErrorBuilder.newBuilder(ErrorKind.YANDEX_REQUEST_FAILED).withCode(500).withDescription(e.message))
         }
     }
 

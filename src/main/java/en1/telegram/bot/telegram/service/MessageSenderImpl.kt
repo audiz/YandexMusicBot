@@ -1,6 +1,5 @@
 package en1.telegram.bot.telegram.service
 
-import en1.common.ERRORS_MAP
 import en1.common.ResultOf
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -33,8 +32,8 @@ class MessageSenderImpl(private val captchaService: CaptchaService, val fitToGpx
                 is SendDocument -> absSender.execute(result.value)
             }
             is ResultOf.Failure -> {
-                logger.error("Failure msg = ${result.message}, code = ${result.code}")
-                sendCommandFailure(absSender, chatId, "Bot failed with code '${result.code}' ${ERRORS_MAP[result.code]}")
+                logger.error("Failure msg = ${result.errorBuilder}")
+                sendCommandFailure(absSender, chatId, "Bot failed with error '${result.errorBuilder.simpleErrorMsg}'")
             }
             is ResultOf.Captcha -> showCaptcha(absSender, userId, chatId, result)
         }
@@ -46,7 +45,7 @@ class MessageSenderImpl(private val captchaService: CaptchaService, val fitToGpx
     override fun sendMessageAnswer(userId: Long, chatId: String, result: ResultOf<SendMessage>, absSender: AbsSender) {
         when (result) {
             is ResultOf.Success -> absSender.execute(result.value)
-            is ResultOf.Failure -> sendCommandFailure(absSender, chatId, "Failure ${result.code}")
+            is ResultOf.Failure -> sendCommandFailure(absSender, chatId, "Failure ${result.errorBuilder.simpleErrorMsg}")
             is ResultOf.Captcha -> showCaptcha(absSender, userId, chatId, result)
         }
     }
@@ -116,6 +115,21 @@ class MessageSenderImpl(private val captchaService: CaptchaService, val fitToGpx
             logger.error("sendCommandUnknown exception: {}", e.stackTraceToString())
         }
     }
+
+    /**
+     * Send command is unknown
+     * */
+    override fun sendNotAllowed(chatId: String, absSender: AbsSender) {
+        try {
+            val sendMessage = SendMessage()
+            sendMessage.chatId = chatId
+            sendMessage.text = "You have no access to this bot"
+            absSender.execute(sendMessage)
+        } catch (e: Exception) {
+            logger.error("sendCommandUnknown exception: {}", e.stackTraceToString())
+        }
+    }
+
 
     /**
      * Transform garmin FIT file to GPX and send to user

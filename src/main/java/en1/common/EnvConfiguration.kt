@@ -1,50 +1,50 @@
 package en1.common
 
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Configuration
+import org.springframework.context.annotation.PropertySource
+import kotlin.system.exitProcess
 
 /**
  * Read system environment variables such as BOT name and token. The list of allowed users(to use bot) and yandex cookies(Session_id)
  * */
 @Configuration
+@PropertySource("classpath:application.properties")
 class EnvConfiguration {
     private val logger = LoggerFactory.getLogger(EnvConfiguration::class.java)
 
-    private var yandexCookie: String? = null
-    private val botUsername: String
-    private val botToken: String
-    private var allowedUsers: List<String> = listOf()
-
-    init {
-        val getenv = System.getenv()
-        yandexCookie = getenv!!["YANDEX_COOKIE"]
-        if (!getenv.containsKey("BOT_NAME") || !getenv.containsKey("BOT_TOKEN")) {
-            logger.error("Environment variables BOT_NAME and BOT_TOKEN must exist")
-            Runtime.getRuntime().halt(1)
-        }
-        botUsername = getenv["BOT_NAME"]!!
-        botToken = getenv["BOT_TOKEN"]!!
-        allowedUsers = getenv["ALLOWED_USERS"]?.split(",") ?: listOf()
-    }
+    @Value("\${bot.name}")
+    private lateinit var bName: String
+    @Value("\${bot.token}")
+    private lateinit var bToken: String
+    @Value("\${yandex.cookie}")
+    private lateinit var yCookie: String
+    @Value("\${allowed.users}")
+    private lateinit var aUsers: String
 
     fun getBotUsername(): String {
-        return botUsername
+        return bName
     }
 
     fun getBotToken(): String {
-        return botToken
+        if (bToken.isNullOrBlank()) {
+            println("Property bot.token not exists, exit. Check your application.properties")
+            //exitProcess(1)
+        }
+        return bToken
     }
 
     fun getAllowedUsers(): List<String> {
-        return allowedUsers
+        return aUsers.split(",")
     }
 
     fun getYandexCookie(): String? {
-        return yandexCookie
+        return yCookie
     }
 
     fun setYandexCookie(yandexCookie: String) {
-        this.yandexCookie = yandexCookie
+        this.yCookie = yandexCookie
     }
 
 }

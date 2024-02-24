@@ -34,7 +34,7 @@ class LoginCommand(val envConfiguration: EnvConfiguration) : ServiceCommand("log
                     /login Session id=data
                
                     Good Luck🙂
-                    """)
+                    """.trimIndent())
                 //sendAnswer(absSender, chat.id, commandIdentifier, userName, """Login command /login Session_id=CUTCUTCUT""".trimIndent())
             }
         }

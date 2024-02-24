@@ -1,52 +1,59 @@
-# YandexMusicBot
+# Yandex Music Bot - Телеграм бот для яндекс музыки.
 
-Telegram bot that allows you to search and download mp3 tracks from Yandex music.
-This is for personal use only from your local network. Don't try to use it on a VDS/VPS.
+Telegram-бот, который позволяет вам искать и скачивать mp3-треки из Яндекс музыки. 
+Например вы можете прослушивать яндекс музыку в браузере(ежедневный персональный плейлист), 
+а с помощью бота скачать понравившиеся треки в кэш телеграм и слушать свой телеграм плейлист на любом устройстве, а так же обмениватсья треками с друзьями.
+Персональный плейлист в боте можно получить выполнив команду "/daily"
 
-### Make project by command with Java 8
+_*Этот бот только для персонального использования в вашей сети провайдера. Не пытайтесь использовать VDS / VPS, т.к будете часто получать капчу и не сможете ничего скачать._
+
+### Соберите проект командой, используйте Java 8 и выше.
+
 ```bash
 mvn clean install
 ```
 
-App will be created at `/target/YandexMusicBot-0.0.1-SNAPSHOT.jar`
+Приложение будет скомпилировано в `/target/YandexMusicBot-0.0.1-SNAPSHOT.jar`
 
-###  Setup environment variables before start
+### Настройка переменных окружения перед запуском
 
-```bash
-export ALLOWED_USERS="telegramUserId1,telegramUserId2,..."
-export BOT_NAME="your_bot_name_bot"
-export BOT_TOKEN="your_bot_token"
-export YANDEX_COOKIE="Session_id=your_session_id"
+В директории с jar приложением создайте файл **application.properties** со следующим содержимым:
+
+```properties
+allowed.users=telegramUserId1,telegramUserId2
+bot.name=your_bot_name_bot
+bot.token=your_bot_token
+yandex.cookie=Session_id=your_session_id
 ```
+Где,
+* **allowed.users** - идентификаторы пользователей telegram, которым разрешено использовать бота.
+* **bot.name** - имя вашего бота
+* **bot.token** - токен вашего бота
+* **yandex.cookie** - Файлы cookie для вашего аккаунта yandex music, найдте его с помощью браузера(нужен только Session_id)
 
-* **ALLOWED_USERS** - telegram users ID that allowed to use the bot.
-* **BOT_NAME** - your bot name
-* **BOT_TOKEN** - your bot token
-* **YANDEX_COOKIE** - COOKIES for your yandex music account, check it in your browser, needed only Session_id. 
+Если _Session_id_ указан неверно, вы не сможете загрузить полные mp3-файлы (только демо-версию) и у вас не будет пресонального дневного плейлиста.
 
-If _Session_id_ is incorrect you won't be able to download full mp3 files(only demo).
-
-###  Run the project
+###  Запустите приложение бота командой
 ```bash
 java -jar YandexMusicBot-0.0.1-SNAPSHOT.jar
 ```
 
-The application is successfully launched if you see `Started BotApplicationKt in 1.398 seconds (JVM running for 1.955)`
+Приложение успешно запущено, если вы увидите: `Started BotApplicationKt in 1.398 seconds (JVM running for 1.955)`
 
-## Now you can send commands to telegram bot.
+## Теперь вы можете отправлять команды telegram-боту.
 
-Send the text "coldplay" and you will get the first page with tracks, page numbering and artists.
+Отправьте текст "coldplay", и вы получите первую страницу с треками, нумерацией страниц и исполнителями.
 
 ![](./doc/SearchText.png)
 
-Click on the button with the artist's name and you will see his tracks
+Нажмите на кнопку с именем исполнителя, и вы увидите его треки
 
 ![](./doc/ClickArtistName.png)
 
-Click on the similar button to see similar artists
+Нажмите на кнопку "Похожие", чтобы увидеть похожих исполнителей
 
 ![](./doc/ShowSimilar.png)
 
-When you click on a track, you will get mp3 file
+Когда вы нажмете на трек, начнется скачивание mp3-файла ботом, через некоторое время он пришлет его вам.
 
 ![](./doc/Track.png)

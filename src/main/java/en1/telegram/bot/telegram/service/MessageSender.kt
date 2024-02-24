@@ -32,6 +32,8 @@ interface MessageSender {
      * */
     fun sendCommandUnknown(chatId: String, absSender: AbsSender)
 
+    fun sendNotAllowed(chatId: String, absSender: AbsSender)
+
     /**
      * Transform garmin FIT file to GPX and send to user
      * */

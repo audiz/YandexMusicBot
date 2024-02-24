@@ -1,9 +1,10 @@
 package en1.telegram.bot.telegram.service
 
-import en1.common.ERROR_UNKNOWN_CALLBACK
 import en1.common.EnvConfiguration
 import en1.common.ResultOf
 import en1.telegram.bot.telegram.callback.*
+import en1.telegram.bot.telegram.exceptions.ErrorBuilder
+import en1.telegram.bot.telegram.exceptions.ErrorKind
 import en1.telegram.bot.telegram.music.CallbackMusicActions
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -40,7 +41,7 @@ class CommandProcessorImpl(val envConfiguration: EnvConfiguration, private val m
             if (envConfiguration.getAllowedUsers().contains(userId.toString())) {
                 processCallback(callback, userId, chatId, absSender, keyboardList)
             } else {
-                messageSender.sendCommandUnknown(chatId, absSender)
+                messageSender.sendNotAllowed(chatId, absSender)
             }
         } else {
             val msg: Message = update.message ?: update.editedMessage
@@ -84,7 +85,7 @@ class CommandProcessorImpl(val envConfiguration: EnvConfiguration, private val m
                 }
                 messageSender.sendMessageAnswer(userId, chatId, result, absSender)
             } else {
-                messageSender.sendCommandUnknown(chatId, absSender)
+                messageSender.sendNotAllowed(chatId, absSender)
             }
         } catch (e: Exception) {
             logger.error("processStringMsg exception: {}", e.stackTraceToString())
@@ -102,7 +103,7 @@ class CommandProcessorImpl(val envConfiguration: EnvConfiguration, private val m
             is ArtistTrackWithPagesCallback -> musicService.artistWithPagesMsg(userId, chatId, callback)
             is SimilarCallback -> musicService.similarMsg(userId, chatId, callback)
             is PlaylistCallback -> musicService.playlist(chatId, callback)
-            is UnknownCallback -> ResultOf.Failure("None callback", ERROR_UNKNOWN_CALLBACK)
+            is UnknownCallback -> ResultOf.Failure(ErrorBuilder.newBuilder(ErrorKind.APP_INTERNAL).withCode(404).withDescription("Unknown callback"))
         }
         messageSender.sendMessage(userId, chatId, callbackResult, absSender)
     }
