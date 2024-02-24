@@ -4,6 +4,8 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.PropertySource
+import javax.annotation.PostConstruct
+import kotlin.concurrent.thread
 import kotlin.system.exitProcess
 
 /**
@@ -23,15 +25,19 @@ class EnvConfiguration {
     @Value("\${allowed.users}")
     private lateinit var aUsers: String
 
+    @PostConstruct
+    fun construct() {
+        if (bToken.isBlank()) {
+            println("Property bot.token not exists, exit. Check your application.properties")
+            thread { exitProcess(1) }.start()
+        }
+    }
+
     fun getBotUsername(): String {
         return bName
     }
 
     fun getBotToken(): String {
-        if (bToken.isNullOrBlank()) {
-            println("Property bot.token not exists, exit. Check your application.properties")
-            //exitProcess(1)
-        }
         return bToken
     }
 

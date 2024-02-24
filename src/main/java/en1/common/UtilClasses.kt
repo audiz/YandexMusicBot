@@ -2,7 +2,6 @@ package en1.common
 
 import en1.telegram.bot.telegram.callback.Callback
 import en1.telegram.bot.telegram.exceptions.ErrorBuilder
-import en1.telegram.bot.telegram.exceptions.ErrorException
 import yandex.dto.domain.CaptchaInfo
 import java.net.URLDecoder
 import java.net.URLEncoder

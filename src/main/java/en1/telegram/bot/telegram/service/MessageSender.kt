@@ -19,7 +19,6 @@ interface MessageSender {
      * */
     fun sendMessageAnswer(userId: Long, chatId: String, result: ResultOf<SendMessage>, absSender: AbsSender)
 
-
     /**
      * Send internal error
      * */
