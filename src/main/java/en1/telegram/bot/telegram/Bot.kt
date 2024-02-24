@@ -21,6 +21,7 @@ class Bot(val envConfiguration: EnvConfiguration, val commandProcessor: CommandP
         botCommands.forEach { register(it) }
         val listCommand = listOf(
             BotCommand("daily", "Personal daily playlist"),
+            BotCommand("playlists", "Show all personal playlists"),
             BotCommand("login", "Update yandex \"Session id\"")
         )
         this.execute(SetMyCommands(listCommand, null, null))

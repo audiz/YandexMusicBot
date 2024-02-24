@@ -3,8 +3,6 @@ package en1.telegram.bot.telegram.service
 import en1.common.ResultOf
 import org.telegram.telegrambots.bots.DefaultAbsSender
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage
-import org.telegram.telegrambots.meta.api.objects.Message
-import org.telegram.telegrambots.meta.api.objects.Update
 import org.telegram.telegrambots.meta.bots.AbsSender
 
 /**
@@ -33,11 +31,6 @@ interface MessageSender {
     fun sendCommandUnknown(chatId: String, absSender: AbsSender)
 
     fun sendNotAllowed(chatId: String, absSender: AbsSender)
-
-    /**
-     * Transform garmin FIT file to GPX and send to user
-     * */
-    fun sendFitDoc(msg: Message, update: Update, absSender: DefaultAbsSender)
 
     /**
      * Send command is locked by double execution

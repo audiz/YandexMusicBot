@@ -45,11 +45,7 @@ class CommandProcessorImpl(val envConfiguration: EnvConfiguration, private val m
             }
         } else {
             val msg: Message = update.message ?: update.editedMessage
-            if (msg.hasDocument() && msg.document.fileName.lowercase().endsWith(".fit")) {
-                messageSender.sendFitDoc(msg, update, absSender)
-            } else {
-                processStringMsg(userId, chatId, msg.text, absSender)
-            }
+            processStringMsg(userId, chatId, msg.text, absSender)
         }
     }
 

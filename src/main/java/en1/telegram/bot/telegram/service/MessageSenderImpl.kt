@@ -19,7 +19,7 @@ import java.net.URL
  * Send different message types for users request
  * */
 @Component
-class MessageSenderImpl(private val captchaService: CaptchaService, val fitToGpxConverter: FitToGpxConverter) : MessageSender {
+class MessageSenderImpl(private val captchaService: CaptchaService) : MessageSender {
     private val logger = LoggerFactory.getLogger(MessageSenderImpl::class.java)
 
     /**
@@ -127,30 +127,6 @@ class MessageSenderImpl(private val captchaService: CaptchaService, val fitToGpx
             absSender.execute(sendMessage)
         } catch (e: Exception) {
             logger.error("sendCommandUnknown exception: {}", e.stackTraceToString())
-        }
-    }
-
-
-    /**
-     * Transform garmin FIT file to GPX and send to user
-     * */
-    override fun sendFitDoc(msg: Message, update: Update, absSender: DefaultAbsSender) {
-        logger.info("msg.getDocument().getFileName() = {}", msg.document.fileName)
-        val docId: String = update.message.document.fileId
-        val docName: String = update.message.document.fileName
-        val chatId: Long = msg.chatId
-        val getFile = GetFile()
-        getFile.fileId = docId
-        try {
-            val file: File = absSender.execute(getFile)
-            val `is`: InputStream = absSender.downloadFileAsStream(file)
-            val stream: InputStream = fitToGpxConverter.decode(`is`)
-            val sendDocument = SendDocument()
-            sendDocument.chatId = chatId.toString()
-            sendDocument.document = InputFile(stream, String.format("%s.gpx", docName.substringBeforeLast(".")))
-            absSender.execute(sendDocument)
-        } catch (e: Exception) {
-            logger.error("sendFitDoc exception: {}", e.stackTraceToString())
         }
     }
 
