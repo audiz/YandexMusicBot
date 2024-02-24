@@ -1,7 +1,6 @@
-package bot.telegram.music
+package bot.telegram.callback
 
 import bot.common.ResultOf
-import bot.telegram.callback.*
 import org.telegram.telegrambots.meta.api.methods.send.SendDocument
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton
@@ -21,6 +20,9 @@ interface CallbackMusicActions {
      * */
     fun dailyPlaylist(chatId: String): ResultOf<SendMessage>
 
+    /**
+     * All playlists
+     * */
     fun playlist(chatId: String, callback: PlaylistCallback): ResultOf<SendMessage>
 
     /**

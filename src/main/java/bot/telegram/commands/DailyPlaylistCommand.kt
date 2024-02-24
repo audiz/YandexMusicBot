@@ -1,6 +1,6 @@
 package bot.telegram.commands
 
-import bot.telegram.music.CallbackMusicActions
+import bot.telegram.callback.CallbackMusicActions
 import bot.telegram.service.MessageSender
 import bot.common.Utils
 import org.slf4j.LoggerFactory

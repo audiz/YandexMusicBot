@@ -1,4 +1,4 @@
-package bot.telegram.service
+package bot.telegram.callback
 
 import java.io.*
 

@@ -1,6 +1,5 @@
 package bot.telegram.callback
 
-import bot.telegram.service.IntByteArraysConverter
 import java.io.ByteArrayOutputStream
 import java.nio.charset.StandardCharsets
 

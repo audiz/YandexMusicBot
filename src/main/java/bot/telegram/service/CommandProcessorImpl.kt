@@ -4,7 +4,7 @@ import bot.common.EnvConfiguration
 import bot.common.ResultOf
 import bot.common.ErrorBuilder
 import bot.common.ErrorKind
-import bot.telegram.music.CallbackMusicActions
+import bot.telegram.callback.CallbackMusicActions
 import bot.telegram.callback.*
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component

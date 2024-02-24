@@ -1,8 +1,10 @@
-package bot.telegram.music
+package bot.telegram.callback
 
 import bot.common.ResultOf
 import bot.common.returnNok
-import bot.telegram.callback.*
+import bot.yandex.YandexMusic
+import bot.yandex.dto.domain.ArtistItem
+import bot.yandex.dto.domain.TrackItem
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import org.telegram.telegrambots.meta.api.methods.send.SendDocument
@@ -10,9 +12,6 @@ import org.telegram.telegrambots.meta.api.methods.send.SendMessage
 import org.telegram.telegrambots.meta.api.objects.InputFile
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton
-import bot.yandex.YandexMusic
-import bot.yandex.dto.domain.ArtistItem
-import bot.yandex.dto.domain.TrackItem
 import java.net.URLEncoder
 import java.util.concurrent.TimeUnit
 
