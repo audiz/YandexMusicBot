@@ -78,7 +78,7 @@ class CommandProcessorImpl(val envConfiguration: EnvConfiguration, private val m
                     captchaService.remove(userId)
                     musicService.answerCaptcha(chatId, text, captchaResult)
                 } else {
-                    musicService.searchByString(chatId, text)
+                    musicService.searchByString(userId, chatId, text)
                 }
                 messageSender.sendMessageAnswer(userId, chatId, result, absSender)
             } else {
@@ -99,7 +99,8 @@ class CommandProcessorImpl(val envConfiguration: EnvConfiguration, private val m
             is SearchTrackWithPagesCallback -> musicService.searchWithPagesMsg(userId, chatId, callback)
             is ArtistTrackWithPagesCallback -> musicService.artistWithPagesMsg(userId, chatId, callback)
             is SimilarCallback -> musicService.similarMsg(userId, chatId, callback)
-            is PlaylistCallback -> musicService.playlist(chatId, callback)
+            is PlaylistCallback -> musicService.playlist(userId, chatId, callback)
+            is DownloadPlaylistCallback -> musicService.showDownloadPlaylist(userId, chatId)
             is UnknownCallback -> ResultOf.Failure(ErrorBuilder.newBuilder(ErrorKind.APP_INTERNAL).withCode(404).withDescription("Unknown callback"))
         }
         messageSender.sendMessage(userId, chatId, callbackResult, absSender)

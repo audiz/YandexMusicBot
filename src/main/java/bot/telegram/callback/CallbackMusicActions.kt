@@ -10,6 +10,8 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKe
  * */
 interface CallbackMusicActions {
 
+    fun showDownloadPlaylist(userId: Long, chatId: String): ResultOf<SendMessage>
+
     /**
      * Show personal playlists for yandex user
      * */
@@ -18,17 +20,17 @@ interface CallbackMusicActions {
     /**
      * Return a daily playlist for the current yandex music
      * */
-    fun dailyPlaylist(chatId: String): ResultOf<SendMessage>
+    fun dailyPlaylist(userId: Long, chatId: String): ResultOf<SendMessage>
 
     /**
      * All playlists
      * */
-    fun playlist(chatId: String, callback: PlaylistCallback): ResultOf<SendMessage>
+    fun playlist(userId: Long, chatId: String, callback: PlaylistCallback): ResultOf<SendMessage>
 
     /**
      * Find music information for search request and show to user
      * */
-    fun searchByString(chatId: String, text: String): ResultOf<SendMessage>
+    fun searchByString(userId: Long, chatId: String, text: String): ResultOf<SendMessage>
     /**
      * Show artist tracks to the user
      * */

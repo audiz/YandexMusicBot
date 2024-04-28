@@ -30,4 +30,6 @@ interface MessageSender {
      * Send command is locked by double execution
      * */
     fun sendCommandLocked(chatId: String, absSender: DefaultAbsSender)
+
+    fun sendSimpleMsg(chatId: String, absSender: AbsSender, text: String)
 }

@@ -125,4 +125,20 @@ class MessageSenderImpl(private val captchaService: CaptchaService) : MessageSen
             logger.error("sendCommandUnknown exception: {}", e.stackTraceToString())
         }
     }
+
+    /**
+     * Send command is locked by double execution
+     * */
+    override fun sendSimpleMsg(chatId: String, absSender: AbsSender, text: String) {
+        try {
+            val sendMessage = SendMessage()
+            sendMessage.chatId = chatId
+            sendMessage.text = text
+            absSender.execute(sendMessage)
+        } catch (e: Exception) {
+            logger.error("sendCommandUnknown exception: {}", e.stackTraceToString())
+        }
+    }
+
+
 }

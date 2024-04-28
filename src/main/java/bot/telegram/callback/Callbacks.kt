@@ -79,6 +79,18 @@ data class PlaylistCallback(val kind: Long, val owner: String): Callback() {
     }
 }
 
+/**
+ * Download Playlist
+ * */
+data class DownloadPlaylistCallback(val userId: Long, val trackFrom: Int, val trackTo: Int): Callback() {
+    companion object {
+        const val identifier: Byte = 7
+    }
+
+    override fun encode(): String {
+        return generateStringFromData(identifier, intArrayOf(trackFrom, trackTo), "$userId", null)
+    }
+}
 
 object UnknownCallback: Callbacks
 
@@ -135,6 +147,7 @@ fun String.decodeCallback() : Callbacks {
         ArtistTrackWithPagesCallback.identifier -> ArtistTrackWithPagesCallback(intArr[0], intArr[1], searchString)
         SimilarCallback.identifier -> SimilarCallback(intArr[0])
         PlaylistCallback.identifier -> PlaylistCallback(textData.substringBefore(":").toLong(), textData.substringAfter(":"))
+        DownloadPlaylistCallback.identifier -> DownloadPlaylistCallback(textData.toLong(), intArr[0], intArr[1])
         else -> UnknownCallback
     }
 }
