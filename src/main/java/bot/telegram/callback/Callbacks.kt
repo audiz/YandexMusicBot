@@ -1,9 +1,8 @@
 package bot.telegram.callback
 
+import bot.common.API_CALLBACK_LENGTH_LIMIT
 import java.io.ByteArrayOutputStream
 import java.nio.charset.StandardCharsets
-
-private const val API_CALLBACK_LENGTH_LIMIT = 62
 
 /**
  * Possible callback types for music search
@@ -82,13 +81,13 @@ data class PlaylistCallback(val kind: Long, val owner: String): Callback() {
 /**
  * Download Playlist
  * */
-data class DownloadPlaylistCallback(val userId: Long, val trackFrom: Int, val trackTo: Int): Callback() {
+data class DownloadPlaylistCallback(val userId: Long, val trackFrom: Int, val trackTo: Int, val position: Int): Callback() {
     companion object {
         const val identifier: Byte = 7
     }
 
     override fun encode(): String {
-        return generateStringFromData(identifier, intArrayOf(trackFrom, trackTo), "$userId", null)
+        return generateStringFromData(identifier, intArrayOf(trackFrom, trackTo, position), "$userId", null)
     }
 }
 
@@ -147,7 +146,7 @@ fun String.decodeCallback() : Callbacks {
         ArtistTrackWithPagesCallback.identifier -> ArtistTrackWithPagesCallback(intArr[0], intArr[1], searchString)
         SimilarCallback.identifier -> SimilarCallback(intArr[0])
         PlaylistCallback.identifier -> PlaylistCallback(textData.substringBefore(":").toLong(), textData.substringAfter(":"))
-        DownloadPlaylistCallback.identifier -> DownloadPlaylistCallback(textData.toLong(), intArr[0], intArr[1])
+        DownloadPlaylistCallback.identifier -> DownloadPlaylistCallback(textData.toLong(), intArr[0], intArr[1], intArr[2])
         else -> UnknownCallback
     }
 }

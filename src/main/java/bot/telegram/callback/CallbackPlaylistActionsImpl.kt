@@ -1,9 +1,6 @@
 package bot.telegram.callback
 
-import bot.common.ErrorBuilder
-import bot.common.ErrorKind
-import bot.common.ResultOf
-import bot.common.returnNok
+import bot.common.*
 import bot.telegram.repository.UserStorage
 import bot.yandex.YandexMusic
 import bot.yandex.dto.domain.ArtistItem
@@ -11,48 +8,60 @@ import bot.yandex.dto.domain.TrackItem
 import org.slf4j.LoggerFactory
 import org.springframework.context.MessageSource
 import org.springframework.stereotype.Component
-import org.telegram.telegrambots.meta.api.methods.send.SendDocument
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage
-import org.telegram.telegrambots.meta.api.objects.InputFile
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton
 import java.net.URLEncoder
 import java.util.*
 import java.util.concurrent.TimeUnit
 import kotlin.collections.ArrayList
-
-private const val ARTISTS_PER_PAGE = 10
-private const val TRACKS_PER_PAGE = 10
-private const val API_BUTTONS_ROW_LIMIT = 8
+import kotlin.math.ceil
 
 /**
  * Handler for callback user actions
  * */
 @Component
-class CallbackMusicActionsImpl(val yandexMusic: YandexMusic, val messageSource: MessageSource, val userStorage: UserStorage) : CallbackMusicActions {
-    private val logger = LoggerFactory.getLogger(CallbackMusicActionsImpl::class.java)
+class CallbackPlaylistActionsImpl(val yandexMusic: YandexMusic, val messageSource: MessageSource, val userStorage: UserStorage) : CallbackPlaylistActions {
+    private val logger = LoggerFactory.getLogger(CallbackPlaylistActionsImpl::class.java)
 
     override fun showDownloadPlaylist(userId: Long, chatId: String): ResultOf<SendMessage> {
-        val tracks = userStorage.getLatestTracks(userId)
-        if (tracks.isNullOrEmpty()) {
+        val userStorage = userStorage.getUserStorageData(userId)
+        if (userStorage == null || userStorage.tracks.isEmpty()) {
             return ResultOf.Failure(ErrorBuilder.newBuilder(ErrorKind.APP_INTERNAL)
                 .withCode(404)
                 .withDescription(messageSource.getMessage("errors.latest.playlists.not.found", null, Locale.getDefault())))
         }
+        val sizeTracks = userStorage.tracks.size
+        val sizeLoaded = userStorage.loaded.size
+        val interval = ceil(sizeTracks / sizeLoaded.toDouble()).toInt()
         val rowList: MutableList<List<InlineKeyboardButton>> = ArrayList()
 
-        val inlineKeyboardButton1 = InlineKeyboardButton()
-        inlineKeyboardButton1.text = "Load first 10 tracks"
-        inlineKeyboardButton1.callbackData = DownloadPlaylistCallback(userId, 0, 10).encode()
-        val keyboardButtonsRow1: MutableList<InlineKeyboardButton> = ArrayList()
-        keyboardButtonsRow1.add(inlineKeyboardButton1)
-        rowList.add(keyboardButtonsRow1)
+        var isDone = true
+        for (i in 0 until sizeLoaded) {
+            if (userStorage.loaded[i] == null) {
+                isDone = false
+                val trackFrom = i * interval
+                val trackTo = (i + 1) * interval
+                val inlineKeyboardButton1 = InlineKeyboardButton()
+                inlineKeyboardButton1.text = messageSource.getMessage("download.latest.playlist.loadtracks", arrayOf(trackFrom + 1, trackTo), Locale.getDefault())
+                inlineKeyboardButton1.callbackData = DownloadPlaylistCallback(userId, trackFrom, trackTo, i).encode()
+                val keyboardButtonsRow1: MutableList<InlineKeyboardButton> = ArrayList()
+                keyboardButtonsRow1.add(inlineKeyboardButton1)
+                rowList.add(keyboardButtonsRow1)
+            }
+        }
+
+        val msg = if (isDone) {
+            messageSource.getMessage("download.latest.playlist.done", null, Locale.getDefault())
+        } else {
+            messageSource.getMessage("download.latest.playlist", null, Locale.getDefault())
+        }
 
         val inlineKeyboardMarkup = InlineKeyboardMarkup()
         inlineKeyboardMarkup.keyboard = rowList
 
         val answer = SendMessage()
-        answer.text = messageSource.getMessage("download.latest.playlist", null, Locale.getDefault())
+        answer.text = msg
         answer.chatId = chatId
         answer.replyMarkup = inlineKeyboardMarkup
 
@@ -254,39 +263,6 @@ class CallbackMusicActionsImpl(val yandexMusic: YandexMusic, val messageSource: 
     }
 
     /**
-     * Download track and send it to user
-     * */
-    override fun document(userId: Long, chatId: String, callback: TrackCallback, keyboardList: List<List<InlineKeyboardButton>>): ResultOf<SendDocument> {
-        var songName = ""
-        for (keyboard in keyboardList) {
-            for (inlineBtn in keyboard) {
-                if (inlineBtn.callbackData.decodeCallback(TrackCallback::class.java)?.trackId == callback.trackId) {
-                    songName = inlineBtn.text
-                    break
-                }
-            }
-        }
-        songName = songName.substringBeforeLast(" (")
-
-        val storageResult = yandexMusic.findStorage(callback.trackId, callback.artistId)
-        if (storageResult is ResultOf.Failure) { return storageResult }
-        val storage = (storageResult as ResultOf.Success).value
-
-        val fileLocationResult = yandexMusic.findFileLocation(storage, callback.searchString)
-        if (fileLocationResult is ResultOf.Failure) { return fileLocationResult }
-        val fileLocation = (fileLocationResult as ResultOf.Success).value
-
-        val streamResult = yandexMusic.downloadFileAsStream(fileLocation, songName, callback.searchString)
-        if (streamResult is ResultOf.Failure) { return streamResult }
-        val stream = (streamResult as ResultOf.Success).value
-
-        val sendDocument = SendDocument()
-        sendDocument.chatId = chatId
-        sendDocument.document = InputFile(stream, String.format("%s.mp3", songName))
-        return ResultOf.Success(sendDocument)
-    }
-
-    /**
      * Send [answer] for [captcha] to yandex and return result
      * */
     override fun answerCaptcha(chatId: String, answer: String, captcha: ResultOf.Captcha): ResultOf<SendMessage> {
@@ -301,7 +277,7 @@ class CallbackMusicActionsImpl(val yandexMusic: YandexMusic, val messageSource: 
      * Print callback buttons with tracks to download
      * */
     private fun createTrackButtons(userId: Long, trackList: List<TrackItem>, rowList: MutableList<List<InlineKeyboardButton>>, searchText: String) {
-        userStorage.saveLatestTracks(userId, trackList)
+        userStorage.saveLatestTracks(userId, trackList, searchText)
 
         trackList.map { track ->
             val inlineKeyboardButton1 = InlineKeyboardButton()

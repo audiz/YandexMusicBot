@@ -1,10 +1,7 @@
 package bot.telegram.service
 
-import bot.common.EnvConfiguration
-import bot.common.ResultOf
-import bot.common.ErrorBuilder
-import bot.common.ErrorKind
-import bot.telegram.callback.CallbackMusicActions
+import bot.common.*
+import bot.telegram.callback.CallbackPlaylistActions
 import bot.telegram.callback.*
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -18,7 +15,10 @@ import java.util.concurrent.ConcurrentHashMap
  * Process bot text messages, files, callbacks...
  * */
 @Component
-class CommandProcessorImpl(val envConfiguration: EnvConfiguration, private val musicService: CallbackMusicActions, private val captchaService: CaptchaService,
+class CommandProcessorImpl(val envConfiguration: EnvConfiguration,
+                           private val musicService: CallbackPlaylistActions,
+                           private val musicDownloadActions: MusicDownloadActions,
+                           private val captchaService: CaptchaService,
                            private val messageSender: MessageSender
 ) {
     private val logger = LoggerFactory.getLogger(CommandProcessorImpl::class.java)
@@ -95,12 +95,19 @@ class CommandProcessorImpl(val envConfiguration: EnvConfiguration, private val m
      * */
     private fun processCallback(callback: Callbacks, userId: Long, chatId: String, absSender: DefaultAbsSender, keyboardList: List<List<InlineKeyboardButton>>? = null) {
         val callbackResult = when (callback) {
-            is TrackCallback -> musicService.document(userId, chatId, callback, keyboardList!!)
+            is TrackCallback -> musicDownloadActions.downloadMp3(userId, chatId, callback, keyboardList!!)
             is SearchTrackWithPagesCallback -> musicService.searchWithPagesMsg(userId, chatId, callback)
             is ArtistTrackWithPagesCallback -> musicService.artistWithPagesMsg(userId, chatId, callback)
             is SimilarCallback -> musicService.similarMsg(userId, chatId, callback)
             is PlaylistCallback -> musicService.playlist(userId, chatId, callback)
-            is DownloadPlaylistCallback -> musicService.showDownloadPlaylist(userId, chatId)
+            is DownloadPlaylistCallback -> {
+                val result = musicDownloadActions.downloadMp3List(userId, chatId, callback, absSender)
+                if (result is ResultOf.Failure) {
+                    result
+                } else {
+                    musicService.showDownloadPlaylist(userId, chatId)
+                }
+            }
             is UnknownCallback -> ResultOf.Failure(ErrorBuilder.newBuilder(ErrorKind.APP_INTERNAL).withCode(404).withDescription("Unknown callback"))
         }
         messageSender.sendMessage(userId, chatId, callbackResult, absSender)

@@ -1,6 +1,6 @@
 package bot.telegram.commands
 
-import bot.telegram.callback.CallbackMusicActions
+import bot.telegram.callback.CallbackPlaylistActions
 import bot.telegram.service.MessageSender
 import bot.common.Utils
 import org.slf4j.LoggerFactory
@@ -14,7 +14,7 @@ import org.telegram.telegrambots.meta.bots.AbsSender
  * Daily playlist command
  */
 @Component
-class DailyPlaylistCommand(private val musicService: CallbackMusicActions,
+class DailyPlaylistCommand(private val musicService: CallbackPlaylistActions,
                            private val messageSender: MessageSender
 ) : BotCommand("daily", "Daily playlist") {
     private val logger = LoggerFactory.getLogger(DailyPlaylistCommand::class.java)

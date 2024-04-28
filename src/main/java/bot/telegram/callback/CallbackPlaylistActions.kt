@@ -1,15 +1,12 @@
 package bot.telegram.callback
 
 import bot.common.ResultOf
-import org.telegram.telegrambots.meta.api.methods.send.SendDocument
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage
-import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton
 
 /**
  * Actions for users callbacks from telegram
  * */
-interface CallbackMusicActions {
-
+interface CallbackPlaylistActions {
     fun showDownloadPlaylist(userId: Long, chatId: String): ResultOf<SendMessage>
 
     /**
@@ -43,10 +40,7 @@ interface CallbackMusicActions {
      * Show similar artists
      * */
     fun similarMsg(userId: Long, chatId: String, callback: SimilarCallback): ResultOf<SendMessage>
-    /**
-     * Send mp3 track to user
-     * */
-    fun document(userId: Long, chatId: String, callback: TrackCallback, keyboardList: List<List<InlineKeyboardButton>>): ResultOf<SendDocument>
+
     /**
      * Answer captcha
      * */
