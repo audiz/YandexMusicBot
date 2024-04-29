@@ -91,6 +91,19 @@ data class DownloadPlaylistCallback(val userId: Long, val trackFrom: Int, val tr
     }
 }
 
+/**
+ * Cancel Download Playlist
+ * */
+data class CancelDownloadPlaylistCallback(val userId: Long): Callback() {
+    companion object {
+        const val identifier: Byte = 8
+    }
+
+    override fun encode(): String {
+        return generateStringFromData(identifier, null, "$userId", null)
+    }
+}
+
 object UnknownCallback: Callbacks
 
 /**
@@ -122,9 +135,9 @@ fun generateStringFromData(callbackId: Byte, intArray: IntArray?, text: String?,
         outputStream.write(searchStr)
     }
 
-    if (outputStream.size() > API_CALLBACK_LENGTH_LIMIT) {
+    //if (outputStream.size() > API_CALLBACK_LENGTH_LIMIT) {
         //logger.warn("outputStream.size() > API_CALLBACK_LENGTH_LIMIT: {} > {}", outputStream.size(), API_CALLBACK_LENGTH_LIMIT)
-    }
+    //}
 
     val data = outputStream.toByteArray()
     return String(data, Charsets.ISO_8859_1)
@@ -147,10 +160,12 @@ fun String.decodeCallback() : Callbacks {
         SimilarCallback.identifier -> SimilarCallback(intArr[0])
         PlaylistCallback.identifier -> PlaylistCallback(textData.substringBefore(":").toLong(), textData.substringAfter(":"))
         DownloadPlaylistCallback.identifier -> DownloadPlaylistCallback(textData.toLong(), intArr[0], intArr[1], intArr[2])
+        CancelDownloadPlaylistCallback.identifier -> CancelDownloadPlaylistCallback(textData.toLong())
         else -> UnknownCallback
     }
 }
 
+@SuppressWarnings("unchecked")
 fun <T> String.decodeCallback(clazz: Class<T>): T? {
     val obj = this.decodeCallback()
     if (obj::class.java == clazz) {

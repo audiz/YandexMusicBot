@@ -6,7 +6,10 @@ import org.telegram.telegrambots.meta.api.methods.send.SendMessage
 /**
  * Actions for users callbacks from telegram
  * */
-interface CallbackPlaylistActions {
+interface PlaylistActions {
+
+    fun cancelDownloadPlaylist(userId: Long, chatId: String): ResultOf<SendMessage>
+
     fun showDownloadPlaylist(userId: Long, chatId: String): ResultOf<SendMessage>
 
     /**

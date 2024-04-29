@@ -40,4 +40,8 @@ class UserStorageImpl: UserStorage {
             v
         }
     }
+
+    override fun clearStorageData(userId: Long) {
+        map.remove(userId)
+    }
 }

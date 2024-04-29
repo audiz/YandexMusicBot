@@ -10,10 +10,13 @@ import org.springframework.context.MessageSource
 import org.springframework.stereotype.Component
 import org.telegram.telegrambots.bots.DefaultAbsSender
 import org.telegram.telegrambots.meta.api.methods.send.SendDocument
+import org.telegram.telegrambots.meta.api.methods.send.SendMessage
 import org.telegram.telegrambots.meta.api.objects.InputFile
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton
 import java.io.InputStream
 import java.util.*
+import java.util.concurrent.Callable
+import java.util.concurrent.Executors
 
 @Component
 class MusicDownloadActionsImpl(val yandexMusic: YandexMusic,
@@ -21,6 +24,20 @@ class MusicDownloadActionsImpl(val yandexMusic: YandexMusic,
                                val userStorage: UserStorage,
                                val messageSender: MessageSender
                                ): MusicDownloadActions {
+
+    /**
+     * Cancel download list
+     * */
+    override fun cancelDownloadMp3List(userId: Long, chatId: String): ResultOf<SendMessage> {
+        executor.shutdownNow()
+        executor = Executors.newSingleThreadExecutor()
+        userStorage.clearStorageData(userId)
+
+        val answer = SendMessage()
+        answer.text = messageSource.getMessage("download.latest.playlist.canceled", null, Locale.getDefault())
+        answer.chatId = chatId
+        return ResultOf.Success(answer)
+    }
 
     /**
      * Download list of tracks
@@ -38,38 +55,49 @@ class MusicDownloadActionsImpl(val yandexMusic: YandexMusic,
                 .withCode(403)
                 .withDescription(messageSource.getMessage("errors.latest.playlists.position.used", null, Locale.getDefault())))
         }
-        if (storage.loaded[callback.position] == false) {
+        val inProgress: Boolean = !((storage.loaded.find{ it == false }) ?: true)
+        if (inProgress) {
             return ResultOf.Failure(
                 ErrorBuilder.newBuilder(ErrorKind.APP_INTERNAL)
                 .withCode(403)
                 .withDescription(messageSource.getMessage("errors.latest.playlists.position.using", null, Locale.getDefault())))
         }
-        // now we can download
 
-        userStorage.startDownloadTracks(userId, callback.position)
+        // now we can download
         val subList = storage.tracks.subList(callback.trackFrom, callback.trackTo)
         //"Storage download form ${callback.trackFrom} to ${callback.trackTo}"
-        var used = false
-        for (track in subList) {
-            val artists = track.artists.joinToString(separator = ", ") { it.name }
-            val songName = "${track.title} - $artists"
-            messageSender.sendSimpleMsg(chatId, absSender, songName)
+        val callable = Callable {
+            var used = false
+            for (track in subList) {
+                val artists = track.artists.joinToString(separator = ", ") { it.name }
+                val songName = "${track.title} - $artists"
+                messageSender.sendSimpleMsg(chatId, absSender, songName)
 
-            if (!used) {
-                used = true
-                val pair = getTrackStream(track.id, track.albums[0].id, songName, storage.searchText)
-                if (pair.first != null) {
-                    return pair.first!!
+                Thread.sleep(2000)
+
+                if (!used) {
+                    used = true
+                    val pair = getTrackStream(track.id, track.albums[0].id, songName, storage.searchText)
+                    if (pair.first != null) {
+                        return@Callable pair.first!!
+                    }
+                    val stream = pair.second
+                    val sendDocument = SendDocument()
+                    sendDocument.chatId = chatId
+                    sendDocument.document = InputFile(stream, String.format("%s.mp3", songName))
+                    messageSender.sendMessage(userId, chatId, ResultOf.Success(sendDocument), absSender)
                 }
-                val stream = pair.second
-                val sendDocument = SendDocument()
-                sendDocument.chatId = chatId
-                sendDocument.document = InputFile(stream, String.format("%s.mp3", songName))
-                messageSender.sendMessage(userId, chatId, ResultOf.Success(sendDocument), absSender)
             }
         }
+
+        userStorage.startDownloadTracks(userId, callback.position)
+        val feature = executor.submit(callable)
+        val result = feature.get()
         userStorage.stopDownloadTracks(userId, callback.position)
 
+        if (result is ResultOf.Failure) {
+            return result
+        }
         return ResultOf.Success(true)
     }
 
@@ -94,18 +122,6 @@ class MusicDownloadActionsImpl(val yandexMusic: YandexMusic,
         }
         val stream = pair.second
 
-        /*val storageResult = yandexMusic.findStorage(callback.trackId, callback.artistId)
-        if (storageResult is ResultOf.Failure) { return storageResult }
-        val storage = (storageResult as ResultOf.Success).value
-
-        val fileLocationResult = yandexMusic.findFileLocation(storage, callback.searchString)
-        if (fileLocationResult is ResultOf.Failure) { return fileLocationResult }
-        val fileLocation = (fileLocationResult as ResultOf.Success).value
-
-        val streamResult = yandexMusic.downloadFileAsStream(fileLocation, songName, callback.searchString)
-        if (streamResult is ResultOf.Failure) { return streamResult }
-        val stream = (streamResult as ResultOf.Success).value*/
-
         val sendDocument = SendDocument()
         sendDocument.chatId = chatId
         sendDocument.document = InputFile(stream, String.format("%s.mp3", songName))
@@ -126,5 +142,9 @@ class MusicDownloadActionsImpl(val yandexMusic: YandexMusic,
         val stream = (streamResult as ResultOf.Success).value
 
         return Pair(null, stream)
+    }
+
+    companion object {
+        var executor = Executors.newSingleThreadExecutor()
     }
 }

@@ -5,7 +5,6 @@ import bot.telegram.repository.UserStorage
 import bot.yandex.YandexMusic
 import bot.yandex.dto.domain.ArtistItem
 import bot.yandex.dto.domain.TrackItem
-import org.slf4j.LoggerFactory
 import org.springframework.context.MessageSource
 import org.springframework.stereotype.Component
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage
@@ -21,8 +20,35 @@ import kotlin.math.ceil
  * Handler for callback user actions
  * */
 @Component
-class CallbackPlaylistActionsImpl(val yandexMusic: YandexMusic, val messageSource: MessageSource, val userStorage: UserStorage) : CallbackPlaylistActions {
-    private val logger = LoggerFactory.getLogger(CallbackPlaylistActionsImpl::class.java)
+class PlaylistActionsImpl(val yandexMusic: YandexMusic, val messageSource: MessageSource, val userStorage: UserStorage) : PlaylistActions {
+    //private val logger = LoggerFactory.getLogger(PlaylistActionsImpl::class.java)
+
+    override fun cancelDownloadPlaylist(userId: Long, chatId: String): ResultOf<SendMessage> {
+        val userStorage = userStorage.getUserStorageData(userId)
+        if (userStorage == null || userStorage.tracks.isEmpty()) {
+            return ResultOf.Failure(ErrorBuilder.newBuilder(ErrorKind.APP_INTERNAL)
+                .withCode(404)
+                .withDescription(messageSource.getMessage("errors.latest.playlists.not.found", null, Locale.getDefault())))
+        }
+        val rowList: MutableList<List<InlineKeyboardButton>> = ArrayList()
+
+        val inlineKeyboardButton1 = InlineKeyboardButton()
+        inlineKeyboardButton1.text = messageSource.getMessage("download.latest.playlist.cancel.action", null, Locale.getDefault())
+        inlineKeyboardButton1.callbackData = CancelDownloadPlaylistCallback(userId).encode()
+        val keyboardButtonsRow1: MutableList<InlineKeyboardButton> = ArrayList()
+        keyboardButtonsRow1.add(inlineKeyboardButton1)
+        rowList.add(keyboardButtonsRow1)
+
+        val inlineKeyboardMarkup = InlineKeyboardMarkup()
+        inlineKeyboardMarkup.keyboard = rowList
+
+        val answer = SendMessage()
+        answer.text = messageSource.getMessage("download.latest.playlist.cancel", null, Locale.getDefault())
+        answer.chatId = chatId
+        answer.replyMarkup = inlineKeyboardMarkup
+
+        return ResultOf.Success(answer)
+    }
 
     override fun showDownloadPlaylist(userId: Long, chatId: String): ResultOf<SendMessage> {
         val userStorage = userStorage.getUserStorageData(userId)
@@ -109,13 +135,12 @@ class CallbackPlaylistActionsImpl(val yandexMusic: YandexMusic, val messageSourc
         val playlist = (playlistResult as ResultOf.Success).value
 
         val rowList: MutableList<List<InlineKeyboardButton>> = ArrayList()
-
         createTrackButtons(userId, playlist.playlist.tracks.take(60), rowList, "")
 
         val inlineKeyboardMarkup = InlineKeyboardMarkup()
         inlineKeyboardMarkup.keyboard = rowList
         val answer = SendMessage()
-        answer.text = "Playlist tracks count for user is ${playlist.playlist.tracks.size}"
+        answer.text = messageSource.getMessage("playlist.track.count", arrayOf(playlist.playlist.tracks.size), Locale.getDefault())
         answer.chatId = chatId
         answer.replyMarkup = inlineKeyboardMarkup
 
@@ -171,7 +196,8 @@ class CallbackPlaylistActionsImpl(val yandexMusic: YandexMusic, val messageSourc
         inlineKeyboardMarkup.keyboard = rowList
 
         val answer = SendMessage()
-        answer.text = "Tracks found for request: ${search.tracks.total}"
+
+        answer.text = messageSource.getMessage("playlist.track.found", arrayOf(search.tracks.total), Locale.getDefault())
         answer.chatId = chatId
         answer.replyMarkup = inlineKeyboardMarkup
 
@@ -201,10 +227,9 @@ class CallbackPlaylistActionsImpl(val yandexMusic: YandexMusic, val messageSourc
         inlineKeyboardMarkup.keyboard = rowList
 
         val answer = SendMessage()
-        answer.text = "Artist page: $page (${(page * TRACKS_PER_PAGE)} of ${artistSearch.tracks.size} tracks)"
+        answer.text = messageSource.getMessage("playlist.artists.tracks.pages", arrayOf(page, (page * TRACKS_PER_PAGE), artistSearch.tracks.size), Locale.getDefault())
         answer.chatId = chatId
         answer.replyMarkup = inlineKeyboardMarkup
-
         return ResultOf.Success(answer)
     }
 
@@ -234,7 +259,7 @@ class CallbackPlaylistActionsImpl(val yandexMusic: YandexMusic, val messageSourc
         inlineKeyboardMarkup.keyboard = rowList
 
         val answer = SendMessage()
-        answer.text = "Search page: $page (${(page * TRACKS_PER_PAGE)} of ${search.tracks.total} tracks)"
+        answer.text = messageSource.getMessage("playlist.search.tracks.pages", arrayOf(page, (page * TRACKS_PER_PAGE), search.tracks.total), Locale.getDefault())
         answer.chatId = chatId
         answer.replyMarkup = inlineKeyboardMarkup
 
@@ -256,7 +281,7 @@ class CallbackPlaylistActionsImpl(val yandexMusic: YandexMusic, val messageSourc
         inlineKeyboardMarkup.keyboard = rowList
 
         val answer = SendMessage()
-        answer.text = "Artists similar to ${artistSearch.artist.name}"
+        answer.text = messageSource.getMessage("playlist.artists.similar", arrayOf(artistSearch.artist.name), Locale.getDefault())
         answer.chatId = chatId
         answer.replyMarkup = inlineKeyboardMarkup
         return ResultOf.Success(answer)
@@ -302,7 +327,7 @@ class CallbackPlaylistActionsImpl(val yandexMusic: YandexMusic, val messageSourc
     private fun artistButtonShowMoreRow(artistId: Int): MutableList<InlineKeyboardButton> {
         val artistsButtonsRow: MutableList<InlineKeyboardButton> = ArrayList()
         val inlineArtistButton = InlineKeyboardButton()
-        inlineArtistButton.text = "Show more similar artists..."
+        inlineArtistButton.text = messageSource.getMessage("playlist.artists.similar.more", null, Locale.getDefault())
         inlineArtistButton.callbackData = SimilarCallback(artistId).encode()
         artistsButtonsRow.add(inlineArtistButton)
         return artistsButtonsRow

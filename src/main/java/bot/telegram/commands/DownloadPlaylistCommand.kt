@@ -1,6 +1,6 @@
 package bot.telegram.commands
 
-import bot.telegram.callback.CallbackPlaylistActions
+import bot.telegram.callback.PlaylistActions
 import bot.telegram.service.MessageSender
 import bot.common.Utils
 import bot.telegram.repository.UserStorage
@@ -17,7 +17,7 @@ import java.util.*
  * Daily playlist command
  */
 @Component
-class DownloadPlaylistCommand(private val musicService: CallbackPlaylistActions,
+class DownloadPlaylistCommand(private val playlistActions: PlaylistActions,
                               private val messageSender: MessageSender,
                               private val userStorage: UserStorage,
                               val messageSource: MessageSource,
@@ -30,10 +30,14 @@ class DownloadPlaylistCommand(private val musicService: CallbackPlaylistActions,
         val chatId = chat.id.toString()
         logger.info("Пользователь {} ({}). Начато выполнение команды {}", userName, user.id, commandIdentifier)
         val storage = userStorage.getUserStorageData(userId)
+        val inProgress: Boolean = !((storage?.loaded?.find{ it == false }) ?: true)
+
         if (storage == null || storage.tracks.isEmpty()) {
             messageSender.sendSimpleMsg(chatId, absSender, messageSource.getMessage("download.latest.playlist.not.found", null, Locale.getDefault()))
+        } else if (inProgress) {
+            messageSender.sendMessage(userId, chatId, playlistActions.cancelDownloadPlaylist(userId, chatId), absSender)
         } else {
-            messageSender.sendMessage(userId, chatId, musicService.showDownloadPlaylist(userId, chatId), absSender)
+            messageSender.sendMessage(userId, chatId, playlistActions.showDownloadPlaylist(userId, chatId), absSender)
         }
         logger.debug("Пользователь {}. Завершено выполнение команды {}", userName, commandIdentifier)
     }
