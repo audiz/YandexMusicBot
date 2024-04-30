@@ -13,7 +13,7 @@ interface MusicDownloadActions {
     /**
      * Send mp3 track to user
      * */
-    fun downloadMp3List(userId: Long, chatId: String, callback: DownloadPlaylistCallback, absSender: DefaultAbsSender): ResultOf<Boolean>
+    fun downloadMp3List(userId: Long, chatId: String, callback: DownloadPlaylistCallback, absSender: DefaultAbsSender): ResultOf<SendMessage>
 
     /**
      * Send mp3 track to user

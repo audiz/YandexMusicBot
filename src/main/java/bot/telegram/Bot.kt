@@ -25,10 +25,10 @@ class Bot(val envConfiguration: EnvConfiguration,
     init {
         botCommands.forEach { register(it) }
         val listCommand = listOf(
-            BotCommand("download", messageSource.getMessage("download.latest.playlist", null, Locale.getDefault())),
+            BotCommand("download", messageSource.getMessage("main.button.download", null, Locale.getDefault())),
             BotCommand("daily", messageSource.getMessage("main.button.daily", null, Locale.getDefault())),
-            BotCommand("playlists", "Show all personal playlists"),
-            BotCommand("login", "Update yandex \"Session id\"")
+            BotCommand("playlists", messageSource.getMessage("main.button.playlists", null, Locale.getDefault())),
+            BotCommand("help", messageSource.getMessage("main.button.help", null, Locale.getDefault()))
         )
         this.execute(SetMyCommands(listCommand, null, null))
         logger.info("Бот создан!")

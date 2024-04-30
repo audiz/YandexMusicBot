@@ -15,7 +15,6 @@ import org.telegram.telegrambots.meta.api.objects.InputFile
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton
 import java.io.InputStream
 import java.util.*
-import java.util.concurrent.Callable
 import java.util.concurrent.Executors
 
 @Component
@@ -42,7 +41,7 @@ class MusicDownloadActionsImpl(val yandexMusic: YandexMusic,
     /**
      * Download list of tracks
      * */
-    override fun downloadMp3List(userId: Long, chatId: String, callback: DownloadPlaylistCallback, absSender: DefaultAbsSender): ResultOf<Boolean> {
+    override fun downloadMp3List(userId: Long, chatId: String, callback: DownloadPlaylistCallback, absSender: DefaultAbsSender): ResultOf<SendMessage> {
         val storage = userStorage.getUserStorageData(userId)
             ?: return ResultOf.Failure(
                 ErrorBuilder.newBuilder(ErrorKind.APP_INTERNAL)
@@ -66,16 +65,17 @@ class MusicDownloadActionsImpl(val yandexMusic: YandexMusic,
         // now we can download
         val subList = storage.tracks.subList(callback.trackFrom, callback.trackTo)
         //"Storage download form ${callback.trackFrom} to ${callback.trackTo}"
-        val callable = Callable {
+
+        executor.submit {
+            userStorage.startDownloadTracks(userId, callback.position)
             var used = false
             for (track in subList) {
+                Thread.sleep(2000)
                 val artists = track.artists.joinToString(separator = ", ") { it.name }
                 val songName = "${track.title} - $artists"
                 messageSender.sendSimpleMsg(chatId, absSender, songName)
 
-                Thread.sleep(2000)
-
-                if (!used) {
+                /*if (!used) {
                     used = true
                     val pair = getTrackStream(track.id, track.albums[0].id, songName, storage.searchText)
                     if (pair.first != null) {
@@ -86,19 +86,21 @@ class MusicDownloadActionsImpl(val yandexMusic: YandexMusic,
                     sendDocument.chatId = chatId
                     sendDocument.document = InputFile(stream, String.format("%s.mp3", songName))
                     messageSender.sendMessage(userId, chatId, ResultOf.Success(sendDocument), absSender)
-                }
+                }*/
             }
+            userStorage.stopDownloadTracks(userId, callback.position)
         }
 
-        userStorage.startDownloadTracks(userId, callback.position)
-        val feature = executor.submit(callable)
-        val result = feature.get()
-        userStorage.stopDownloadTracks(userId, callback.position)
+        //playlistActions.showDownloadPlaylist(userId, chatId)
 
-        if (result is ResultOf.Failure) {
+        /*if (result is ResultOf.Failure) {
             return result
-        }
-        return ResultOf.Success(true)
+        }*/
+        val sendMessage = SendMessage()
+        sendMessage.chatId = chatId
+        sendMessage.text = messageSource.getMessage("download.latest.playlist.started", null, Locale.getDefault())
+
+        return ResultOf.Success(sendMessage)
     }
 
     /**

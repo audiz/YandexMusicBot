@@ -23,7 +23,7 @@ abstract class ServiceCommand(identifier: String?, description: String?) : BotCo
         try {
             absSender.execute(message)
         } catch (e: TelegramApiException) {
-            logger.error(String.format("Ошибка %s. Команда %s. Пользователь: %s", e.message, commandName, userName))
+            logger.error("Ошибка {}. Команда {}. Пользователь: {}", e.message, commandName, userName)
             e.printStackTrace()
         }
     }

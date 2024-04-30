@@ -2,6 +2,7 @@ package bot.telegram.service
 
 import bot.common.ResultOf
 import org.slf4j.LoggerFactory
+import org.springframework.context.MessageSource
 import org.springframework.stereotype.Component
 import org.telegram.telegrambots.bots.DefaultAbsSender
 import org.telegram.telegrambots.meta.api.methods.send.SendDocument
@@ -10,12 +11,13 @@ import org.telegram.telegrambots.meta.api.objects.InputFile
 import org.telegram.telegrambots.meta.bots.AbsSender
 import java.io.InputStream
 import java.net.URL
+import java.util.*
 
 /**
  * Send different message types for users request
  * */
 @Component
-class MessageSenderImpl(private val captchaService: CaptchaService) : MessageSender {
+class MessageSenderImpl(private val captchaService: CaptchaService, val messageSource: MessageSource,) : MessageSender {
     private val logger = LoggerFactory.getLogger(MessageSenderImpl::class.java)
 
     /**
@@ -29,9 +31,12 @@ class MessageSenderImpl(private val captchaService: CaptchaService) : MessageSen
             }
             is ResultOf.Failure -> {
                 logger.error("Failure msg = ${result.errorBuilder}")
-                sendCommandFailure(absSender, chatId, "Bot failed with error '${result.errorBuilder.simpleErrorMsg}'")
+                sendCommandFailure(absSender, chatId, messageSource.getMessage("bot.error.command", arrayOf(result.errorBuilder.simpleErrorMsg), Locale.getDefault()))
             }
             is ResultOf.Captcha -> showCaptcha(absSender, userId, chatId, result)
+            is ResultOf.None -> {
+
+            }
         }
     }
 
@@ -41,7 +46,7 @@ class MessageSenderImpl(private val captchaService: CaptchaService) : MessageSen
     override fun sendMessageAnswer(userId: Long, chatId: String, result: ResultOf<SendMessage>, absSender: AbsSender) {
         when (result) {
             is ResultOf.Success -> absSender.execute(result.value)
-            is ResultOf.Failure -> sendCommandFailure(absSender, chatId, "Failure ${result.errorBuilder.simpleErrorMsg}")
+            is ResultOf.Failure -> sendCommandFailure(absSender, chatId, result.errorBuilder.simpleErrorMsg)
             is ResultOf.Captcha -> showCaptcha(absSender, userId, chatId, result)
         }
     }
@@ -91,7 +96,7 @@ class MessageSenderImpl(private val captchaService: CaptchaService) : MessageSen
         try {
             val sendMessage = SendMessage()
             sendMessage.chatId = chatId
-            sendMessage.text = "Internal error while processing"
+            sendMessage.text = messageSource.getMessage("bot.error.internal", null, Locale.getDefault())
             absSender.execute(sendMessage)
         } catch (e: Exception) {
             logger.error("sendInternalError exception: {}", e.stackTraceToString())
@@ -105,7 +110,7 @@ class MessageSenderImpl(private val captchaService: CaptchaService) : MessageSen
         try {
             val sendMessage = SendMessage()
             sendMessage.chatId = chatId
-            sendMessage.text = "You have no access to this bot"
+            sendMessage.text = messageSource.getMessage("bot.error.no-access", null, Locale.getDefault())
             absSender.execute(sendMessage)
         } catch (e: Exception) {
             logger.error("sendCommandUnknown exception: {}", e.stackTraceToString())
@@ -119,7 +124,7 @@ class MessageSenderImpl(private val captchaService: CaptchaService) : MessageSen
         try {
             val sendMessage = SendMessage()
             sendMessage.chatId = chatId
-            sendMessage.text = "The command is locked by double execution"
+            sendMessage.text = messageSource.getMessage("bot.error.double.exec", null, Locale.getDefault())
             absSender.execute(sendMessage)
         } catch (e: Exception) {
             logger.error("sendCommandUnknown exception: {}", e.stackTraceToString())

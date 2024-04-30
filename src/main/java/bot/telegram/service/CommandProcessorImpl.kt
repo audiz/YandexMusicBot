@@ -100,14 +100,7 @@ class CommandProcessorImpl(val envConfiguration: EnvConfiguration,
             is ArtistTrackWithPagesCallback -> playlistActions.artistWithPagesMsg(userId, chatId, callback)
             is SimilarCallback -> playlistActions.similarMsg(userId, chatId, callback)
             is PlaylistCallback -> playlistActions.playlist(userId, chatId, callback)
-            is DownloadPlaylistCallback -> {
-                val result = musicDownloadActions.downloadMp3List(userId, chatId, callback, absSender)
-                if (result is ResultOf.Failure) {
-                    result
-                } else {
-                    playlistActions.showDownloadPlaylist(userId, chatId)
-                }
-            }
+            is DownloadPlaylistCallback -> musicDownloadActions.downloadMp3List(userId, chatId, callback, absSender)
             is CancelDownloadPlaylistCallback -> musicDownloadActions.cancelDownloadMp3List(userId, chatId)
             is UnknownCallback -> ResultOf.Failure(ErrorBuilder.newBuilder(ErrorKind.APP_INTERNAL).withCode(404).withDescription("Unknown callback"))
         }
