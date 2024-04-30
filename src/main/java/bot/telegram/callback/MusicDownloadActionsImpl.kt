@@ -6,6 +6,7 @@ import bot.common.ResultOf
 import bot.telegram.repository.UserStorage
 import bot.telegram.service.MessageSender
 import bot.yandex.YandexMusic
+import kotlinx.coroutines.*
 import org.springframework.context.MessageSource
 import org.springframework.stereotype.Component
 import org.telegram.telegrambots.bots.DefaultAbsSender
@@ -15,6 +16,7 @@ import org.telegram.telegrambots.meta.api.objects.InputFile
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton
 import java.io.InputStream
 import java.util.*
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 
 @Component
@@ -28,8 +30,11 @@ class MusicDownloadActionsImpl(val yandexMusic: YandexMusic,
      * Cancel download list
      * */
     override fun cancelDownloadMp3List(userId: Long, chatId: String): ResultOf<SendMessage> {
-        executor.shutdownNow()
-        executor = Executors.newSingleThreadExecutor()
+        val job = jobMap[userId]!!
+        job.cancel()
+        runBlocking {
+            job.join()
+        }
         userStorage.clearStorageData(userId)
 
         val answer = SendMessage()
@@ -64,38 +69,35 @@ class MusicDownloadActionsImpl(val yandexMusic: YandexMusic,
 
         // now we can download
         val subList = storage.tracks.subList(callback.trackFrom, callback.trackTo)
-        //"Storage download form ${callback.trackFrom} to ${callback.trackTo}"
 
-        executor.submit {
-            userStorage.startDownloadTracks(userId, callback.position)
-            var used = false
-            for (track in subList) {
-                Thread.sleep(2000)
-                val artists = track.artists.joinToString(separator = ", ") { it.name }
-                val songName = "${track.title} - $artists"
-                messageSender.sendSimpleMsg(chatId, absSender, songName)
+        CoroutineScope(Dispatchers.IO).launch {
+            val job = launch {
+                userStorage.startDownloadTracks(userId, callback.position)
+                for (track in subList) {
+                    delay(3000)
+                    val artists = track.artists.joinToString(separator = ", ") { it.name }
+                    val songName = "${track.title} - $artists"
+                    //messageSender.sendSimpleMsg(chatId, absSender, songName)
 
-                /*if (!used) {
-                    used = true
                     val pair = getTrackStream(track.id, track.albums[0].id, songName, storage.searchText)
                     if (pair.first != null) {
-                        return@Callable pair.first!!
+                        messageSender.sendSimpleMsg(chatId, absSender, pair.first!!.errorBuilder.simpleErrorMsg)
+                        break
                     }
                     val stream = pair.second
                     val sendDocument = SendDocument()
                     sendDocument.chatId = chatId
                     sendDocument.document = InputFile(stream, String.format("%s.mp3", songName))
                     messageSender.sendMessage(userId, chatId, ResultOf.Success(sendDocument), absSender)
-                }*/
+                }
+                messageSender.sendSimpleMsg(chatId, absSender,  messageSource.getMessage("download.latest.playlist.completed", null, Locale.getDefault()))
+
+                userStorage.stopDownloadTracks(userId, callback.position)
             }
-            userStorage.stopDownloadTracks(userId, callback.position)
+            jobMap[userId] = job
         }
 
-        //playlistActions.showDownloadPlaylist(userId, chatId)
 
-        /*if (result is ResultOf.Failure) {
-            return result
-        }*/
         val sendMessage = SendMessage()
         sendMessage.chatId = chatId
         sendMessage.text = messageSource.getMessage("download.latest.playlist.started", null, Locale.getDefault())
@@ -148,5 +150,6 @@ class MusicDownloadActionsImpl(val yandexMusic: YandexMusic,
 
     companion object {
         var executor = Executors.newSingleThreadExecutor()
+        var jobMap = ConcurrentHashMap<Long, Job>()
     }
 }
