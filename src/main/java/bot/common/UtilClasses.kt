@@ -12,7 +12,7 @@ sealed class ResultOf<out T> {
     data class Success<out R>(val value: R, val header: Map<String, String>? = null): ResultOf<R>()
     data class Failure(val errorBuilder: ErrorBuilder): ResultOf<Nothing>()
     data class Captcha(val captcha: CaptchaInfo, var callback: Callback? = null): ResultOf<Nothing>()
-    class None: ResultOf<Nothing>()
+    //class None: ResultOf<Nothing>()
 }
 
 

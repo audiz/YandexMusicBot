@@ -1,9 +1,9 @@
 package bot.common
 
+import jakarta.annotation.PostConstruct
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.PropertySource
-import javax.annotation.PostConstruct
 
 /**
  * Read system environment variables such as BOT name and token. The list of allowed users(to use bot) and yandex cookies(Session_id)

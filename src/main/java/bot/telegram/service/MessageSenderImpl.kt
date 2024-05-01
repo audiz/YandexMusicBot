@@ -34,9 +34,6 @@ class MessageSenderImpl(private val captchaService: CaptchaService, val messageS
                 sendCommandFailure(absSender, chatId, messageSource.getMessage("bot.error.command", arrayOf(result.errorBuilder.simpleErrorMsg), Locale.getDefault()))
             }
             is ResultOf.Captcha -> showCaptcha(absSender, userId, chatId, result)
-            is ResultOf.None -> {
-
-            }
         }
     }
 
