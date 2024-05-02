@@ -1,17 +1,8 @@
 package bot.common
 
-import org.telegram.telegrambots.meta.api.objects.Message
 import org.telegram.telegrambots.meta.api.objects.User
 
 object Utils {
-    /**
-     * Формирование имени пользователя
-     * @param msg сообщение
-     */
-    fun getUserName(msg: Message): String {
-        return getUserName(msg.from)
-    }
-
     /**
      * Формирование имени пользователя. Если заполнен никнейм, используем его. Если нет - используем фамилию и имя
      * @param user пользователь

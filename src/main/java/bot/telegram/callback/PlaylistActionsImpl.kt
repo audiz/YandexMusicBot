@@ -130,6 +130,13 @@ class PlaylistActionsImpl(val yandexMusic: YandexMusic, val messageSource: Messa
     }
 
     override fun playlist(userId: Long, chatId: String, callback: PlaylistCallback): ResultOf<SendMessage> {
+        userStorage.getUserStorageData(userId).isDownloadProcess {
+            return ResultOf.Failure(
+                ErrorBuilder.newBuilder(ErrorKind.APP_INTERNAL)
+                    .withCode(403)
+                    .withDescription(messageSource.getMessage("errors.latest.playlists.position.using", null, Locale.getDefault())))
+        }
+
         val playlistResult = yandexMusic.getPlaylist(callback.kind, callback.owner)
         playlistResult.returnNok { return it }
         val playlist = (playlistResult as ResultOf.Success).value
@@ -151,6 +158,13 @@ class PlaylistActionsImpl(val yandexMusic: YandexMusic, val messageSource: Messa
      * Daily playlist for current yandex user
      * */
     override fun dailyPlaylist(userId: Long, chatId: String): ResultOf<SendMessage> {
+        userStorage.getUserStorageData(userId).isDownloadProcess {
+            return ResultOf.Failure(
+                ErrorBuilder.newBuilder(ErrorKind.APP_INTERNAL)
+                    .withCode(403)
+                    .withDescription(messageSource.getMessage("errors.latest.playlists.position.using", null, Locale.getDefault())))
+        }
+
         val dailyIdResult = yandexMusic.getPlaylists()
         dailyIdResult.returnNok { return it }
         val dailyPlaylists = (dailyIdResult as ResultOf.Success).value
@@ -180,6 +194,13 @@ class PlaylistActionsImpl(val yandexMusic: YandexMusic, val messageSource: Messa
      * Show search tracks to user
      * */
     override fun searchByString(userId: Long, chatId: String, text: String): ResultOf<SendMessage> {
+        userStorage.getUserStorageData(userId).isDownloadProcess {
+            return ResultOf.Failure(
+                ErrorBuilder.newBuilder(ErrorKind.APP_INTERNAL)
+                    .withCode(403)
+                    .withDescription(messageSource.getMessage("errors.latest.playlists.position.using", null, Locale.getDefault())))
+        }
+
         // TODO cut string to limit
         val searchText = URLEncoder.encode(text.trimIndent(), "utf-8")
         val searchResult = yandexMusic.search(searchText)
@@ -209,6 +230,13 @@ class PlaylistActionsImpl(val yandexMusic: YandexMusic, val messageSource: Messa
      * Limit for json, when more than 150 we should request by ids
      * */
     override fun artistWithPagesMsg(userId: Long, chatId: String, callback: ArtistTrackWithPagesCallback): ResultOf<SendMessage> {
+        userStorage.getUserStorageData(userId).isDownloadProcess {
+            return ResultOf.Failure(
+                ErrorBuilder.newBuilder(ErrorKind.APP_INTERNAL)
+                    .withCode(403)
+                    .withDescription(messageSource.getMessage("errors.latest.playlists.position.using", null, Locale.getDefault())))
+        }
+
         val page = callback.page
         val searchResult = yandexMusic.searchTrack(callback.artistId)
         searchResult.returnNok { return it }
@@ -237,6 +265,13 @@ class PlaylistActionsImpl(val yandexMusic: YandexMusic, val messageSource: Messa
      * Pagination for searched tracks
      * */
     override fun searchWithPagesMsg(userId: Long, chatId: String, callback: SearchTrackWithPagesCallback): ResultOf<SendMessage> {
+        userStorage.getUserStorageData(userId).isDownloadProcess {
+            return ResultOf.Failure(
+                ErrorBuilder.newBuilder(ErrorKind.APP_INTERNAL)
+                    .withCode(403)
+                    .withDescription(messageSource.getMessage("errors.latest.playlists.position.using", null, Locale.getDefault())))
+        }
+
         //logger.info("searchWithPagesMsg callback = {}", callback)
         val page = callback.page
         val realPageForRequest = ((page - 1) * TRACKS_PER_PAGE) / 100

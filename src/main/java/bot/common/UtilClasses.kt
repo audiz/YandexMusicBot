@@ -1,6 +1,7 @@
 package bot.common
 
 import bot.telegram.callback.Callback
+import bot.telegram.repository.model.UserStorageData
 import bot.yandex.dto.domain.CaptchaInfo
 import java.net.URLDecoder
 import java.net.URLEncoder
@@ -31,3 +32,13 @@ inline fun <reified T> ResultOf<T>.returnNok(block: (ResultOf<Nothing>) -> Unit)
 
 fun String.urlEncode(): String = URLEncoder.encode(this, java.nio.charset.StandardCharsets.UTF_8.toString())
 fun String.urlDecode(): String = URLDecoder.decode(this, java.nio.charset.StandardCharsets.UTF_8.toString())
+
+inline fun UserStorageData?.isDownloadProcess(block: () -> Unit) {
+    if (this == null) {
+        return
+    }
+    val inProgress: Boolean = !((this.loaded.find{ it == false }) ?: true)
+    if (inProgress) {
+        return block()
+    }
+}
