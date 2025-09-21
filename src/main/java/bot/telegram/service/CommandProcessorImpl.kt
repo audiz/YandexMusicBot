@@ -38,7 +38,8 @@ class CommandProcessorImpl(val envConfiguration: EnvConfiguration,
             lockDoubleCallbacks[userId] = update.callbackQuery.data
 
             val callback = update.callbackQuery.data.decodeCallback()
-            val keyboardList = update.callbackQuery.message.replyMarkup.keyboard
+
+            val keyboardList = (update.callbackQuery.message as Message).replyMarkup.keyboard
             if (envConfiguration.getAllowedUsers().contains(userId.toString())) {
                 processCallback(callback, userId, chatId, absSender, keyboardList)
             } else {

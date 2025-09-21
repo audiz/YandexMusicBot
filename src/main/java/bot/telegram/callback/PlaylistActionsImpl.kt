@@ -5,6 +5,7 @@ import bot.telegram.repository.UserStorage
 import bot.yandex.YandexMusic
 import bot.yandex.dto.domain.ArtistItem
 import bot.yandex.dto.domain.TrackItem
+import org.slf4j.LoggerFactory
 import org.springframework.context.MessageSource
 import org.springframework.stereotype.Component
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage
@@ -101,6 +102,7 @@ class PlaylistActionsImpl(val yandexMusic: YandexMusic, val messageSource: Messa
         val dailyIdResult = yandexMusic.getPlaylists()
         dailyIdResult.returnNok { return it }
         val dailyPlaylists = (dailyIdResult as ResultOf.Success).value
+
         val playlists = dailyPlaylists.blocks
             .filter { it.type == "personal-playlists" }
             .flatMap { blocks -> blocks.entities.map { Triple(it.data.data?.title, it.data.data?.kind, it.data.data?.owner?.login) }
@@ -168,11 +170,17 @@ class PlaylistActionsImpl(val yandexMusic: YandexMusic, val messageSource: Messa
         val dailyIdResult = yandexMusic.getPlaylists()
         dailyIdResult.returnNok { return it }
         val dailyPlaylists = (dailyIdResult as ResultOf.Success).value
+
         val (playlistId, owner) = dailyPlaylists.blocks.map { blocks -> blocks.entities.find { it.data.data?.title == "Плейлист дня" } }
             .first()?.let { return@let Pair(it.data.data?.kind, it.data.data?.owner?.login) } ?: Pair(null, null)
-        //val playlistId = 153850731
 
-        val dailyPlaylist = yandexMusic.getPlaylist(playlistId!!, owner!!)
+        if (playlistId == null) {
+            return ResultOf.Failure(ErrorBuilder.newBuilder(ErrorKind.APP_INTERNAL)
+                .withCode(404)
+                .withDescription(messageSource.getMessage("errors.latest.playlists.not.found", null, Locale.getDefault())))
+        }
+
+        val dailyPlaylist = yandexMusic.getPlaylist(playlistId, owner!!)
         dailyPlaylist.returnNok { return it }
         val dailyList = (dailyPlaylist as ResultOf.Success).value
 

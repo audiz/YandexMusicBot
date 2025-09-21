@@ -16,7 +16,7 @@
 
 	<properties>
 		<java.version>17</java.version>
-		<telegram.version>6.5.0</telegram.version>
+		<telegram.version>6.9.7.1</telegram.version>
 		<spring.boot.mainclass>bot.BotApplicationKt</spring.boot.mainclass>
 	</properties>
 

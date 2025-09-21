@@ -22,6 +22,8 @@ interface PlaylistActions {
      * */
     fun dailyPlaylist(userId: Long, chatId: String): ResultOf<SendMessage>
 
+    //fun contextPlaylist(userId: Long, chatId: String): ResultOf<SendMessage>
+
     /**
      * All playlists
      * */

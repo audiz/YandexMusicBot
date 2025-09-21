@@ -1,3 +1,3 @@
 package bot.yandex.dto.playlist
 
-data class DataPre(val data: Data?)
+data class DataPre(val data: Data?, val payload: Payload?)
